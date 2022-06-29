@@ -61,6 +61,7 @@ from . import oxfordinstruments
 from . import parker
 from . import pendulum
 from . import razorbill
+from . import rigol
 from . import rohdeschwarz
 from . import siglenttechnologies
 from . import signalrecovery
