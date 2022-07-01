@@ -1,0 +1,7 @@
+############################
+Rigol DSA815 Signal Analyzer
+############################
+
+.. autoclass:: pymeasure.instruments.rigol.DSA815
+    :members:
+    :show-inheritance:
