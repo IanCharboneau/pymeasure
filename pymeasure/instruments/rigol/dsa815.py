@@ -23,88 +23,89 @@
 #
 
 from pymeasure.instruments import Instrument
-from pymeasure.instruments.validators import truncated_range
-
 from io import StringIO
 import numpy as np
 import pandas as pd
 
 
 class DSA815(Instrument):
-    """ Represents the Rigol DSA815 Spectrum Analyzer
+    """Represents the Rigol DSA815 Spectrum Analyzer
     and provides a high-level interface for taking scans of
     high-frequency spectrums
     """
 
     start_frequency = Instrument.control(
-        ":SENS:FREQ:STAR?;", ":SENS:FREQ:STAR %e Hz;",
+        ":SENS:FREQ:STAR?;",
+        ":SENS:FREQ:STAR %e Hz;",
         """ A floating point property that represents the start frequency
         in Hz. This property can be set.
-        """
+        """,
     )
     stop_frequency = Instrument.control(
-        ":SENS:FREQ:STOP?;", ":SENS:FREQ:STOP %e Hz;",
+        ":SENS:FREQ:STOP?;",
+        ":SENS:FREQ:STOP %e Hz;",
         """ A floating point property that represents the stop frequency
         in Hz. This property can be set.
-        """
+        """,
     )
 
     frequency_step = Instrument.control(
-        ":SENS:FREQ:CENT:STEP:INCR?;", ":SENS:FREQ:CENT:STEP:INCR %g Hz;",
+        ":SENS:FREQ:CENT:STEP:INCR?;",
+        ":SENS:FREQ:CENT:STEP:INCR %g Hz;",
         """ A floating point property that represents the frequency step
         in Hz. This property can be set.
-        """
+        """,
     )
     center_frequency = Instrument.control(
-        ":SENS:FREQ:CENT?;", ":SENS:FREQ:CENT %e Hz;",
+        ":SENS:FREQ:CENT?;",
+        ":SENS:FREQ:CENT %e Hz;",
         """ A floating point property that represents the center frequency
         in Hz. This property can be set.
-        """
+        """,
     )
     sweep_time = Instrument.control(
-        ":SENS:SWE:TIME?;", ":SENS:SWE:TIME %.2e;",
+        ":SENS:SWE:TIME?;",
+        ":SENS:SWE:TIME %.2e;",
         """ A floating point property that represents the sweep time
         in seconds. This property can be set.
-        """
+        """,
     )
 
     def __init__(self, resourceName, **kwargs):
-        super().__init__(
-            resourceName,
-            "Rigol DSA815 Spectrum Analyzer",
-            **kwargs
-        )
+        super().__init__(resourceName, "Rigol DSA815 Spectrum Analyzer", **kwargs)
 
     @property
     def frequencies(self):
-        """ Returns a numpy array of frequencies in Hz that
+        """Returns a numpy array of frequencies in Hz that
         correspond to the current settings of the instrument.
         """
         return np.linspace(
             self.start_frequency,
             self.stop_frequency,
             self.frequency_points,
-            dtype=np.float64
+            dtype=np.float64,
         )
 
     def trace(self, number=1):
-        """ Returns a numpy array of the data for a particular trace
+        """Returns a numpy array of the data for a particular trace
         based on the trace number (1, 2, or 3).
         """
         self.write(":FORMat:TRACe:DATA ASCII;")
         data = np.loadtxt(
             StringIO(self.ask(":TRACE:DATA? TRACE%d;" % number)),
-            delimiter=',',
-            dtype=np.float64
+            delimiter=",",
+            dtype=np.float64,
         )
         return data
 
     def trace_df(self, number=1):
-        """ Returns a pandas DataFrame containing the frequency
+        """Returns a pandas DataFrame containing the frequency
         and peak data for a particular trace, based on the
         trace number (1, 2, or 3).
         """
-        return pd.DataFrame({
-            'Frequency (GHz)': self.frequencies * 1e-9,
-            'Peak (dB)': self.trace(number)
-        })
+        return pd.DataFrame(
+            {
+                "Frequency (GHz)": self.frequencies * 1e-9,
+                "Peak (dB)": self.trace(number),
+            }
+        )

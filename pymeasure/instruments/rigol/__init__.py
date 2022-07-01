@@ -22,3 +22,4 @@
 # THE SOFTWARE.
 #
 
+from .dsa815 import DSA815
