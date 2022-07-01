@@ -168,6 +168,7 @@ class AgilentE4407B(Instrument):
     )
 
     # Sensor commands
+    # dectector commands
     resolution_bandwidth = Instrument.control(
         ":SENS:BAND:RES?;",
         ":SENS:BAND:RES %e Hz;",
