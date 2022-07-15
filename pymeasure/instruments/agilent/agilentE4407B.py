@@ -22,6 +22,8 @@
 # THE SOFTWARE.
 #
 
+from distutils.file_util import copy_file
+from gettext import Catalog
 from pymeasure.instruments import Instrument
 from pymeasure.instruments.validators import (
     strict_discrete_set,
@@ -39,6 +41,8 @@ class AgilentE4407B(Instrument):
     and provides a high-level interface for taking scans of
     high-frequency spectrums
     """
+    def __init__(self, resourceName, **kwargs):
+        super().__init__(resourceName, "Agilent E4407B Spectrum Analyzer", **kwargs)
 
     # frequency Setting commands
     start_frequency = Instrument.control(
@@ -221,6 +225,16 @@ class AgilentE4407B(Instrument):
         validator=strict_discrete_set,
         values=["NEG", "POS", "SAMPL", "AVER", "RMS"],
     )
+    average_type = Instrument.control(
+        ":SENS:AVER:TYPE?",
+        ":SENS:AVER:TYPE %g",
+        """ A string property that represents the average type. LPOW is log power
+        and POW is linear power. This property can be set.
+        """,
+        validator=strict_discrete_set,
+        values=["LPOW", "POW"]
+        ) 
+
     emi_detector_type = Instrument.control(
         ":SENS:DET:EMI?;",
         ":SENS:DET:EMI %s;",
@@ -271,9 +285,319 @@ class AgilentE4407B(Instrument):
         in dBm. This property can be set.
         """,
     )
+    # system commands
 
-    def __init__(self, resourceName, **kwargs):
-        super().__init__(resourceName, "Agilent E4407B Spectrum Analyzer", **kwargs)
+    def reset(self):
+        """
+        A command that resets the instrument.
+        """
+        self.write("*RST")
+
+    def preset(self):
+        """Reset the instrument to the preset conditions."""
+        self.write("SYST:PRES")
+
+    def persistant_reset(self):
+        """Reset the instrument persistant state vakues to there factory defaults."""
+        self.write("SYST:PRES:PERS")
+
+    def save_user_preset(self):
+        """Save the current instrument state as a user preset."""
+        self.write("SYST:PRES:USER:SAVE")
+
+    def abort(self):
+        """
+        A command that aborts the sweep or measurement in progress.
+        """
+        self.write("ABOR")
+    
+    def hardware_configuration(self):
+        """
+        A command that returns information about the current hardware in the instrument.
+        """
+        self.write("SYS:CONF:HARD?")
+    
+    def system_configuration(self):
+        """
+        A command that returns information about the configuration in the instrument.
+        """
+        self.write("SYS:CONF:SYST?")
+
+    recall = Instrument.setting(
+        "*RCL %g",
+        """Recall the instrument state from specified memory resgister.""",
+        validator=strict_discrete_range,
+        values=[2, 30],
+    )
+    SAVE = Instrument.setting(
+        "*SAV %g",
+        """Save the instrument state to specified memory register.""",
+        validator=strict_discrete_range,
+        values=[2, 30],
+    )
+
+    time = Instrument.control(
+        ":SENS:SWE:TIME?",
+        ":SENS:SWE:TIME %g",
+        """Set the real time clock of the instrument. <hours>,<minutes>,<seconds>""",
+    )
+    
+    date = Instrument.control(
+        "SYS:DATE?","SYS:DATE %g",
+        """Set the date of the instrument. <year>,<month>,<day> ####,##,##""",
+    )
+
+    error_queue = Instrument.measurement(
+        ":SYST:ERR?"
+    )
+
+    options  =  Instrument.measurement(
+        "SYS:OPT?"
+    )
+
+
+
+    preset_type = Instrument.setting(
+        ":SYST:PRES:TYPE %g",
+        """ A string property that represents the preset type.
+         can be set to FACT, USER, or MODE.
+         """,
+        validator=strict_discrete_set,
+        values=["FACT", "USER", "MODE"],
+    )
+    # Calibration commands
+    align_all = Instrument.control(
+        ":CAL:ALL?",
+        ":CAL:ALL",
+        """align all the circuits of the instrument.
+        requires cable to be connected from amot ref out
+        """,
+    )
+
+    align_rf = Instrument.control(
+        ":CAL:RF?",
+        ":CAL:RF",
+        """align the rf circuits of the instrument.
+        requires cable to be connected from amot ref out
+        """,
+    )
+
+    auto_rf_align = Instrument.control(
+        ":CAL:AUTO:MODE?",
+        ":CAL:AUTO:MODE %g",
+        """ Detemines whether or not the RF alignment is included in the auto calibration.""",
+        validator=strict_discrete_set,
+        values=["ALL", "NRF"],
+    )
+
+    auto_align = Instrument.control(
+        ":CAL:AUTO?",
+        ":CAL:AUTO %g",
+        """ Turns auto alignment on or off.""",
+        validator=strict_discrete_set,
+        values=["ON", "OFF", 0, 1],
+    )
+    # configuration commands
+    # display commands
+    viewing_angle = Instrument.control(
+        ":DISP:ANGL?",
+        ":DISP:ANGL %g",
+        """ A property that changes the veiwing angle of the instrument.""",
+        validator=strict_discrete_range,
+        values=[1, 7],
+    )
+
+    display_time_format = Instrument.control(
+        ":DISP:ANN:CLOCK:DATE:FORMAT?",
+        ":DISP:ANN:CLOCK:DATE:FORMAT %g",
+        """ A property that represents the date format of the instrument.""",
+        validator=strict_discrete_set,
+        values=["MDY", "DMY"],
+    )
+
+    display_time = Instrument.control(
+        ":DISP:ANN:CLOCK?",
+        ":DISP:ANN:CLOCK %g",
+        """Turn off or on the time display on the instrument.""",
+        validator=strict_discrete_set,
+        values=["ON", "OFF", 0, 1],
+    )
+
+    display_title = Instrument.control(
+        ":DISP:ANN:TITLE:DATA?",
+        ":DISP:ANN:TITLE:DATA %g",
+        """Set the text of the title display on the instrument.""",
+    )
+
+    display = Instrument.setting(
+        ":DISP:ENABLE %g",
+        """Turn off or on the display on the instrument.""",
+        validator=strict_discrete_set,
+        values=["ON", "OFF", 0, 1],
+    )
+    # Mesurement commands
+    # Fetch commands
+    # Mass memory commands
+    catalog = Instrument.measurement(
+        ":MMEM:CAT? %g",
+        """A command that returns the list of mass memory files in specified drive.""",
+        validator=strict_discrete_set,
+        values=["A:", "C:"],
+    )
+    def copy_file(self, source, destination):
+        """
+        A command that copies a file to another.
+        """
+        self.write(":MMEM:COPY %s,%s" % (source, destination))
+    
+    def send_file(self, filename, data_block):
+        """
+        A command that sends a file to the instrument.
+        """
+        self.write(f":MMEM:DATA {filename},{data_block}")
+    
+    recive_file = Instrument.measurement( 
+        ":MMEM:DATA? %g",
+        """A command that returns the contents of a file.""",
+    )
+    delet_file = Instrument.setting(
+        ":MMEM:DEL %g",
+        """A command that deletes a file from the mass memory.""",
+    )
+
+
+    save_screen = Instrument.setting(
+        ":MMEM:STOR:SCR %g",
+        """Save the current screen to the specified mass memory. eg C:myscreen.gif""",
+        )
+
+    def get_screen(self):
+        """
+        A command that returns the contents of the screen.
+        """
+        self.save_screen("C:tempScreen.gif")
+        data = self.recive_file("C:tempScreen.gif")
+        self.delet_file("C:tempScreen.gif")
+        return data
+        
+
+    # Format commands
+    byte_order = Instrument.control(
+        ":FORM:BORD?",
+        ":FORM:BORD %g",
+        """ A property that controls the binary data byte order for transfer.""",
+        validator=strict_discrete_set,
+        values=["NORM", "SWAP"],
+    )
+
+    num_format = Instrument.control(
+        ":FORM:DATA?",
+        ":FORM:DATA %g",
+        """ A property that controls the numerical data format for transfer.""",
+        validator=strict_discrete_set,
+        values=["ASC", "ASCII", "INT,32", "REAL,32", "REAL,64"],
+    )
+    # hard copy commands
+    # initaite commands
+    # input commands
+    # unit commands
+    mesure_units = Instrument.control(
+        ":UNIT:POW?",
+        ":UNIT:POW %g",
+        """ A property that controls the units for input, output, and display.""",
+        validator=strict_discrete_set,
+        values=["DBM", "DBMV", "DBUV", "V", "W"],
+    )
+    # trigger commands
+    trigger_source = Instrument.control(
+        ":TRIG:SOUR?",
+        ":TRIG:SOUR %g",
+        """ A property that controls the trigger source.""",
+        validator=strict_discrete_set,
+        values=["IMM", "VID", "LINE", "EXT"],
+    )
+
+    video_trigger_level = Instrument.control(
+        ":TRIG:VID:LEV?",
+        ":TRIG:VID:LEV %g",
+        """ A property that controls the video trigger level.""",
+    )
+
+    # trace commands
+
+    def copy_trace(self, source, destination):
+        """Copy a trace from one trace to another."""
+        source = strict_discrete_set(source, [1, 2, 3])
+        destination = strict_discrete_set(destination, [1, 2, 3])
+        self.write(f":COPY:TRAC TRACE{source},TRACE{destination}")
+
+    # def transfer_trace(self, destination, trace_data):
+    #     """Transfer a trace from the controller to the instrument."""
+
+    #     destination = strict_discrete_set(destination, [1,2 , 3,])
+        
+    #     self.write(f":TRAC TRACE{source})
+
+    def get_trace(self, trace):
+        """Get a trace from the instrument."""
+        trace = strict_discrete_set(trace, [1, 2, 3])
+        return self.ask(f":TRAC? TRACE{trace}")
+    
+    get_raw_trace = Instrument.measurement(
+        ":TRAC? rawtrace",
+        """Get raw trace from the instrument.""",
+    )
+    peaks = Instrument.measurement(
+        ":TRAC:MATH:PEAK?",
+        """Get peaks from the instrument.""",
+    )
+    peaks_number = Instrument.measurement(
+        ":TRAC:MATH:PEAK:POIN?",
+        """Get the number of peaks from the instrument.""",
+    )
+    peak_sorting = Instrument.control(
+        ":TRAC:MATH:PEAK:SORT?",
+        ":TRAC:MATH:PEAK:SORT %g",
+        """ determine werther to sort peaks by frequency or amplitude"""
+        validator=strict_discrete_set,
+        values=["FREQ", "AMPL"],
+    )
+    peak_threshold = Instrument.control(
+        ":TRAC:MATH:PEAK:THRES?",
+        ":TRAC:MATH:PEAK:THRES %g",
+        """ determine werther to sort peaks by frequency or amplitude"""
+        validator=strict_discrete_set,
+        values=["FREQ", "AMPL"],
+    )
+    peak_width = Instrument.control(
+        ":TRAC:MATH:PEAK:WID?",
+        ":TRAC:MATH:PEAK:WID %g",
+        """ determine werther to sort peaks by frequency or amplitude"""
+        validator=strict_discrete_set,
+        values=["FREQ", "AMPL"],
+    )
+    peak_width_units = Instrument.control(
+        ":TRAC:MATH:PEAK:WID:UNIT?",
+        ":TRAC:MATH:PEAK:WID:UNIT %g",
+        """ determine werther to sort peaks by frequency or amplitude"""
+        validator=strict_discrete_set,
+        values=["POINTS", "SECONDS"],
+    )
+    peak_width_type = Instrument.control(
+        ":TRAC:MATH:PEAK:WID:TYPE?",
+        ":TRAC:MATH:PEAK:WID:TYPE %g",
+        """ determine werther to sort peaks by frequency or amplitude"""
+        validator=strict_discrete_set,
+        values=["PEAK", "RMS"],
+    )
+    peak_width_type = Instrument.control (
+        ":TRAC:MATH:PEAK:WID:TYPE?",
+        ":TRAC:MATH:PEAK:WID:TYPE %g",
+        """ determine werther to sort peaks by frequency or amplitude""",
+        validator=strict_discrete_set,
+        values=["PEAK", "RMS"],
+    )
+    
 
     @property
     def frequencies(self):
