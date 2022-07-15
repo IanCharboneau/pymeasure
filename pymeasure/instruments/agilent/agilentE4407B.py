@@ -42,6 +42,8 @@ class AgilentE4407B(Instrument):
     and provides a high-level interface for taking scans of
     high-frequency spectrums
     """
+    def __init__(self, resourceName, **kwargs):
+        super().__init__(resourceName, "Agilent E4407B Spectrum Analyzer", **kwargs)
 
     def __init__(self, resourceName, **kwargs):
         super().__init__(resourceName, "Agilent E4407B Spectrum Analyzer", **kwargs)
@@ -312,6 +314,18 @@ class AgilentE4407B(Instrument):
         A command that aborts the sweep or measurement in progress.
         """
         self.write("ABOR")
+    
+    def hardware_configuration(self):
+        """
+        A command that returns information about the current hardware in the instrument.
+        """
+        self.write("SYS:CONF:HARD?")
+    
+    def system_configuration(self):
+        """
+        A command that returns information about the configuration in the instrument.
+        """
+        self.write("SYS:CONF:SYST?")
 
     def hardware_configuration(self):
         """
@@ -343,6 +357,21 @@ class AgilentE4407B(Instrument):
         ":SENS:SWE:TIME %g",
         """Set the real time clock of the instrument. <hours>,<minutes>,<seconds>""",
     )
+    
+    date = Instrument.control(
+        "SYS:DATE?","SYS:DATE %g",
+        """Set the date of the instrument. <year>,<month>,<day> ####,##,##""",
+    )
+
+    error_queue = Instrument.measurement(
+        ":SYST:ERR?"
+    )
+
+    options  =  Instrument.measurement(
+        "SYS:OPT?"
+    )
+
+
 
     date = Instrument.control(
         "SYS:DATE?",
@@ -441,13 +470,12 @@ class AgilentE4407B(Instrument):
         validator=strict_discrete_set,
         values=["A:", "C:"],
     )
-
     def copy_file(self, source, destination):
         """
         A command that copies a file to another.
         """
         self.write(":MMEM:COPY %s,%s" % (source, destination))
-
+        
     def send_file(self, filename, data_block):
         """
         A command that sends a file to the instrument.
@@ -531,14 +559,13 @@ class AgilentE4407B(Instrument):
     #     """Transfer a trace from the controller to the instrument."""
 
     #     destination = strict_discrete_set(destination, [1,2 , 3,])
-
     #     self.write(f":TRAC TRACE{source})
 
     def get_trace(self, trace):
         """Get a trace from the instrument."""
         trace = strict_discrete_set(trace, [1, 2, 3])
         return self.ask(f":TRAC? TRACE{trace}")
-
+    
     get_raw_trace = Instrument.measurement(
         ":TRAC? rawtrace",
         """Get raw trace from the instrument.""",
