@@ -365,9 +365,17 @@ class AgilentE4407B(Instrument):
         """Set the date of the instrument. <year>,<month>,<day> ####,##,##""",
     )
 
-    error_queue = Instrument.measurement(":SYST:ERR?")
+    error_queue = Instrument.measurement(
+        ":SYST:ERR?",
+        """A string property that returns the error queue of the instrument.
+        """,
+    )
 
-    options = Instrument.measurement("SYS:OPT?")
+    options = Instrument.measurement(
+        "SYS:OPT?"
+        """A string property that returns the options of the instrument.
+        """,
+    )
 
     date = Instrument.control(
         "SYS:DATE?",
