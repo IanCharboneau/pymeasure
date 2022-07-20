@@ -35,6 +35,7 @@ from pymeasure.instruments.validators import (
 from io import StringIO
 import numpy as np
 import pandas as pd
+import re
 
 
 class AgilentE4407B(Instrument):
@@ -48,29 +49,31 @@ class AgilentE4407B(Instrument):
 
     # frequency Setting commands
     start_frequency = Instrument.control(
-        ":SENS:FREQ:STAR?",
-        ":SENS:FREQ:STAR %g Hz",
+        ":SENS:FREQ:STAR?;",
+        ":SENS:FREQ:STAR %g Hz;",
         """ A floating point property that represents the start frequency
         in Hz. This property can be set.
         """,
         validator=truncated_range,
         values=[9000, 26500000000],
-        cast=int,
+        # get_process=lambda x: np.float32(re.search("[0-9]+\.[0-9]+", x).group())
+        # * np.power(10, int(re.search("\+[0-9]{3}]", x).group())),
     )
     stop_frequency = Instrument.control(
-        ":SENS:FREQ:STOP?",
-        ":SENS:FREQ:STOP %g Hz",
+        ":SENS:FREQ:STOP?;",
+        ":SENS:FREQ:STOP %g Hz;",
         """ A floating point property that represents the stop frequency
         in Hz. This property can be set.
         """,
         validator=truncated_range,
         values=[9000, 26500000000],
-        cast=int,
+        # get_process=lambda x: np.float32(re.search("[0-9]+\.[0-9]+", x).group())
+        # * np.power(10, int(re.search("\+([0-9]{3}])", x).group())),
     )
 
     frequency_step = Instrument.control(
-        ":SENS:FREQ:CENT:STEP:INCR?",
-        ":SENS:FREQ:CENT:STEP:INCR %g Hz",
+        ":SENS:FREQ:CENT:STEP:INCR?;",
+        ":SENS:FREQ:CENT:STEP:INCR %g Hz;",
         """ A floating point property that represents the frequency step
         in Hz. This property can be set.
         """,
@@ -609,8 +612,7 @@ class AgilentE4407B(Instrument):
         return np.linspace(
             self.start_frequency,
             self.stop_frequency,
-            self.frequency_points,
-            dtype=np.float64,
+            int(self.frequency_points),
         )
 
     def trace(self, number=1):
@@ -632,7 +634,7 @@ class AgilentE4407B(Instrument):
         """
         return pd.DataFrame(
             {
-                "Frequency (GHz)": self.frequencies * 1e-9,
+                "Frequency (Hz)": self.frequencies,
                 "Peak (dB)": self.trace(number),
             }
         )
