@@ -109,7 +109,7 @@ class AgilentE4407B(Instrument):
     # sweep commands
     frequency_points = Instrument.control(
         ":SENSe:SWEEp:POINts?",
-        ":SENSe:SWEEp:POINts %g",
+        ":SENSe:SWEEp:POINts %g;",
         """ An integer property that represents the number of frequency
         points in the sweep. This property can take values from 101 to 8192.
         """,
@@ -119,7 +119,7 @@ class AgilentE4407B(Instrument):
     )
     sweep_time = Instrument.control(
         ":SENS:SWE:TIME?",
-        ":SENS:SWE:TIME %g",
+        ":SENS:SWE:TIME %g;",
         """ A floating point property that represents the sweep time
         in seconds. This property can be set.
         """,
