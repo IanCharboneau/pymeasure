@@ -42,7 +42,9 @@ class M7006_001(Instrument):
 
     def __init__(self, resource_name, slot=1, device="A", **kwargs):
 
-        kwargs.setdefault("write_termination", "\n")
+        # kwargs.setdefault("write_termination", "\n")
+        kwargs.setdefault("read_termination", "\n")
+        kwargs.setdefault("timeout", 30)
         super().__init__(resource_name, "test", **kwargs)
         self._slot = slot
         self._device = device
