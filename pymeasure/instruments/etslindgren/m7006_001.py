@@ -55,6 +55,10 @@ class M7006_001(Instrument):
     def values(self, command, **kwargs):
         return super().values(f"{self._slot}{self._device}{command}", **kwargs)
 
+    def check_errors(self):
+        """Checks for errors and returns the error message."""
+        return self.read()
+
     acceleration = Instrument.control(
         "ACC?",
         "ACC %g",
@@ -116,9 +120,8 @@ class M7006_001(Instrument):
         validator=strict_discrete_set,
     )
 
-    position = Instrument.control(
+    position = Instrument.measurement(
         "CP?",
-        "CP %g",
         """Current position of the device. Settable and gettable.
         does not move the device.
         """,
@@ -132,6 +135,7 @@ class M7006_001(Instrument):
     target_position = Instrument.setting(
         "SK %g",
         """Move the device to the given position, by the shortest distance.""",
+        check_set_errors=True,
     )
 
     target_negative_positon = Instrument.setting(
