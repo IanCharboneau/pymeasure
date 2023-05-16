@@ -23,6 +23,7 @@
 #
 
 
+from time import sleep
 from pymeasure.instruments import Instrument
 from pymeasure.instruments.validators import (
     strict_discrete_range,
@@ -49,7 +50,8 @@ class AgilentE4407B(Instrument):
     # frequency Setting commands
     start_frequency = Instrument.control(
         ":SENS:FREQ:STAR?;",
-        ":SENS:FREQ:STAR %g Hz;",
+        ":SENS:FREQ:STAR %g;",
+        # ":SENS:FREQ:STAR %g Hz;",
         """ A floating point property that represents the start frequency
         in Hz. This property can be set.
         """,
@@ -60,7 +62,8 @@ class AgilentE4407B(Instrument):
     )
     stop_frequency = Instrument.control(
         ":SENS:FREQ:STOP?;",
-        ":SENS:FREQ:STOP %g Hz;",
+        ":SENS:FREQ:STOP %g;",
+        # ":SENS:FREQ:STOP %g Hz;",
         """ A floating point property that represents the stop frequency
         in Hz. This property can be set.
         """,
@@ -78,8 +81,8 @@ class AgilentE4407B(Instrument):
         """,
     )
     center_frequency = Instrument.control(
-        ":SENS:FREQ:CENT?",
-        ":SENS:FREQ:CENT %g",
+        ":SENS:FREQ:CENT?;",
+        ":SENS:FREQ:CENT %g;",
         """ A floating point property that represents the center frequency
         in Hz. This property can be set.
         """,
@@ -89,8 +92,8 @@ class AgilentE4407B(Instrument):
     )
 
     span = Instrument.control(
-        ":SENS:FREQ:SPAN?",
-        ":SENS:FREQ:SPAN %g",
+        ":SENS:FREQ:SPAN?;",
+        ":SENS:FREQ:SPAN %g;",
         """ A floating point property that represents the span
         in Hz. This property can be set.
         """,
@@ -108,7 +111,7 @@ class AgilentE4407B(Instrument):
 
     # sweep commands
     frequency_points = Instrument.control(
-        ":SENSe:SWEEp:POINts?",
+        ":SENSe:SWEEp:POINts?;",
         ":SENSe:SWEEp:POINts %g;",
         """ An integer property that represents the number of frequency
         points in the sweep. This property can take values from 101 to 8192.
@@ -118,41 +121,41 @@ class AgilentE4407B(Instrument):
         cast=int,
     )
     sweep_time = Instrument.control(
-        ":SENS:SWE:TIME?",
+        ":SENS:SWE:TIME?;",
         ":SENS:SWE:TIME %g;",
         """ A floating point property that represents the sweep time
         in seconds. This property can be set.
         """,
     )
     number_of_segments = Instrument.measurement(
-        ":SENS:SWEep:SEGMent:COUNT?",
+        ":SENS:SWEep:SEGMent:COUNT?;",
         """ An integer property that represents the number of segments
         in the sweep. This property is read-only.
         """,
     )
     set_all_segments_sst = Instrument.control(
-        ":SENS:SWE:SEGM:DATA? SST",
-        ":SENS:SWE:SEGM:DATA SST,%g",
+        ":SENS:SWE:SEGM:DATA? SST;",
+        ":SENS:SWE:SEGM:DATA SST,%g;",
         """ A command that sets all the segments of a sweep, at once, with a string.
         format is start, stop, rbw, vbw, points, time
         """,
     )
     set_all_segments_csp = Instrument.control(
-        ":SENS:SWE:SEGM:DATA? CSP",
-        ":SENS:SWE:SEGM:DATA CSP,%g",
+        ":SENS:SWE:SEGM:DATA? CSP;",
+        ":SENS:SWE:SEGM:DATA CSP,%g;",
         """ A command that sets all the segments of a sweep, at once, with a string.
         format is center, span, rbw, vbw, points, time
         """,
     )
     merge_segments_sst = Instrument.setting(
-        ":SENS:SWE:SEGM:DATA:MERge SST %g",
+        ":SENS:SWE:SEGM:DATA:MERge SST %g;",
         """
         A command that merges the data with current the segments of a sweep with a string.
         format is start, stop, rbw, vbw, points, time
         """,
     )
     merge_segments_csp = Instrument.setting(
-        ":SENS:SWE:SEGM:DATA:MERge CSP %g",
+        ":SENS:SWE:SEGM:DATA:MERge CSP %g;",
         """
         A command that merges the data with current the segments of a sweep with a string.
         format is center, span, rbw, vbw, points, time
@@ -164,64 +167,64 @@ class AgilentE4407B(Instrument):
         self.write(":SENS:SWE:SEGM:DEL")
 
     delete_segment = Instrument.setting(
-        ":SENS:SWE:SEGM:DEL %g",
+        ":SENS:SWE:SEGM:DEL %g;",
         """
         Deletes the specifed segment of a sweep.""",
     )
 
     # Sensor commands
     resolution_bandwidth = Instrument.control(
-        ":SENS:BAND:RES?",
-        ":SENS:BAND:RES %g",
+        ":SENS:BAND:RES?;",
+        ":SENS:BAND:RES %g;",
         """ A floating point property that represents the resolution bandwidth
         in Hz. This property can be set.
         """,
     )
     video_bandwidth = Instrument.control(
-        ":SENS:BAND:VID?",
-        ":SENS:BAND:VID %g",
+        ":SENS:BAND:VID?;",
+        ":SENS:BAND:VID %g;",
         """ A floating point property that represents the video bandwidth
         in Hz. This property can be set.
         """,
     )
     resolution_bandwidth_auto = Instrument.control(
-        ":SENS:BAND:RES:AUTO?",
-        ":SENS:BAND:RES:AUTO %g",
+        ":SENS:BAND:RES:AUTO?;",
+        ":SENS:BAND:RES:AUTO %g;",
         """ A boolean property that represents the resolution bandwidth
         auto mode. This property can be set.
         """,
     )
     video_bandwidth_auto = Instrument.control(
-        ":SENS:BAND:VID:AUTO?",
-        ":SENS:BAND:VID:AUTO %g",
+        ":SENS:BAND:VID:AUTO?;",
+        ":SENS:BAND:VID:AUTO %g;",
         """ A boolean property that represents the video bandwidth
         auto mode. This property can be set.
         """,
     )
     video_resolution_bandwidth_ratio = Instrument.control(
-        ":SENS:BAND:VID:RAT?",
-        ":SENS:BAND:VID:RAT %g",
+        ":SENS:BAND:VID:RAT?;",
+        ":SENS:BAND:VID:RAT %g;",
         """ A floating point property that represents the video to resolution
         bandwidth ratio. This property can be set.
         """,
     )
     video_resolution_bandwidth_ratio_auto = Instrument.control(
-        ":SENS:BAND:VID:RAT:AUTO?",
-        ":SENS:BAND:VID:RAT:AUTO %g",
+        ":SENS:BAND:VID:RAT:AUTO?;",
+        ":SENS:BAND:VID:RAT:AUTO %g;",
         """ A boolean property that represents the video to resolution
         bandwidth ratio auto mode. This property can be set.
         """,
     )
     detector_auto = Instrument.control(
-        ":SENS:DET:AUTO?",
-        ":SENS:DET:AUTO %g",
+        ":SENS:DET:AUTO?;",
+        ":SENS:DET:AUTO %g;",
         """ A boolean property that represents the detector auto mode.
         This property can be set.
         """,
     )
     detector_type = Instrument.control(
-        ":SENS:DET:?",
-        ":SENS:DET %g",
+        ":SENS:DET:?;",
+        ":SENS:DET %g;",
         """ A string property that represents the detector type.
         This property can be set.
         """,
@@ -229,8 +232,8 @@ class AgilentE4407B(Instrument):
         values=["NEG", "POS", "SAMPL", "AVER", "RMS"],
     )
     average_type = Instrument.control(
-        ":SENS:AVER:TYPE?",
-        ":SENS:AVER:TYPE %g",
+        ":SENS:AVER:TYPE?;",
+        ":SENS:AVER:TYPE %g;",
         """ A string property that represents the average type. LPOW is log power
         and POW is linear power. This property can be set.
         """,
@@ -239,8 +242,8 @@ class AgilentE4407B(Instrument):
     )
 
     emi_detector_type = Instrument.control(
-        ":SENS:DET:EMI?",
-        ":SENS:DET:EMI %g",
+        ":SENS:DET:EMI?;",
+        ":SENS:DET:EMI %g;",
         """ A string property that represents the detector type.
         This property can be set.
         """,
@@ -248,8 +251,8 @@ class AgilentE4407B(Instrument):
         values=["QPE", "AVER", "OFF"],
     )
     emi_view_type = Instrument.control(
-        ":SENS:DET:EMI:VIEW?",
-        ":SENS:DET:EMI:VIEW %g",
+        ":SENS:DET:EMI:VIEW?;",
+        ":SENS:DET:EMI:VIEW %g;",
         """ A string property that represents the detector type.
         This property can be set.
         """,
@@ -257,8 +260,8 @@ class AgilentE4407B(Instrument):
         values=["POS", "EMI"],
     )
     qp_detector_gain = Instrument.control(
-        ":SENS:POW:QPG?",
-        ":SENS:POW:QPG %g",
+        ":SENS:POW:QPG?;",
+        ":SENS:POW:QPG %g;",
         """ Turn on or off the linear x10 gain stage in the quasi-peak and emi average detector only valid with the emi detector enabled.
         This property can be set.
         """,
@@ -266,8 +269,8 @@ class AgilentE4407B(Instrument):
         values=[0, 1, " ON", "OFF"],
     )
     input_attenuation = Instrument.control(
-        ":SENS:POW:ATT?",
-        ":SENS:POW:ATT %g",
+        ":SENS:POW:ATT?;",
+        ":SENS:POW:ATT %g;",
         """ A floating point property that represents the input attenuation
         in dB. This property can be set.
         """,
@@ -275,15 +278,15 @@ class AgilentE4407B(Instrument):
         values=[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65],
     )
     input_attenuation_auto = Instrument.control(
-        ":SENS:POW:ATT:AUTO?",
-        ":SENS:POW:ATT:AUTO %g",
+        ":SENS:POW:ATT:AUTO?;",
+        ":SENS:POW:ATT:AUTO %g;",
         """ A boolean property that represents the input attenuation
         auto mode. This property can be set.
         """,
     )
     max_mixer_power = Instrument.control(
-        ":SENS:POW:MIX:RANG?",
-        ":SENS:POW:MIX:RANG %g",
+        ":SENS:POW:MIX:RANG?;",
+        ":SENS:POW:MIX:RANG %g;",
         """ A floating point property that represents the maximum mixer power
         in dBm. This property can be set.
         """,
@@ -327,44 +330,44 @@ class AgilentE4407B(Instrument):
         self.write("SYS:CONF:SYST?")
 
     recall = Instrument.setting(
-        "*RCL %g",
+        "*RCL %g;",
         """Recall the instrument state from specified memory resgister.""",
         validator=strict_discrete_range,
         values=[2, 30],
     )
     SAVE = Instrument.setting(
-        "*SAV %g",
+        "*SAV %g;",
         """Save the instrument state to specified memory register.""",
         validator=strict_discrete_range,
         values=[2, 30],
     )
 
     time = Instrument.control(
-        ":SENS:SWE:TIME?",
-        ":SENS:SWE:TIME %g",
+        ":SENS:SWE:TIME?;",
+        ":SENS:SWE:TIME %g;",
         """Set the real time clock of the instrument. <hours>,<minutes>,<seconds>""",
     )
 
     date = Instrument.control(
-        "SYS:DATE?",
-        "SYS:DATE %g",
+        "SYS:DATE?;",
+        "SYS:DATE %g;",
         """Set the date of the instrument. <year>,<month>,<day> ####,##,##""",
     )
 
     error_queue = Instrument.measurement(
-        ":SYST:ERR?",
+        ":SYST:ERR?;",
         """A string property that returns the error queue of the instrument.
         """,
     )
 
     options = Instrument.measurement(
-        "SYS:OPT?",
+        "SYS:OPT?;",
         """A string property that returns the options of the instrument.
         """,
     )
 
     preset_type = Instrument.setting(
-        ":SYST:PRES:TYPE %g",
+        ":SYST:PRES:TYPE %g;",
         """ A string property that represents the preset type.
          can be set to FACT, USER, or MODE.
          """,
@@ -373,32 +376,32 @@ class AgilentE4407B(Instrument):
     )
     # Calibration commands
     align_all = Instrument.control(
-        ":CAL:ALL?",
-        ":CAL:ALL",
+        ":CAL:ALL?;",
+        ":CAL:ALL;",
         """align all the circuits of the instrument.
         requires cable to be connected from amot ref out
         """,
     )
 
     align_rf = Instrument.control(
-        ":CAL:RF?",
-        ":CAL:RF",
+        ":CAL:RF?;",
+        ":CAL:RF;",
         """align the rf circuits of the instrument.
         requires cable to be connected from amot ref out
         """,
     )
 
     auto_rf_align = Instrument.control(
-        ":CAL:AUTO:MODE?",
-        ":CAL:AUTO:MODE %g",
+        ":CAL:AUTO:MODE?;",
+        ":CAL:AUTO:MODE %g;",
         """ Detemines whether or not the RF alignment is included in the auto calibration.""",
         validator=strict_discrete_set,
         values=["ALL", "NRF"],
     )
 
     auto_align = Instrument.control(
-        ":CAL:AUTO?",
-        ":CAL:AUTO %g",
+        ":CAL:AUTO?;",
+        ":CAL:AUTO %g;",
         """ Turns auto alignment on or off.""",
         validator=strict_discrete_set,
         values=["ON", "OFF", 0, 1],
@@ -406,37 +409,37 @@ class AgilentE4407B(Instrument):
     # configuration commands
     # display commands
     viewing_angle = Instrument.control(
-        ":DISP:ANGL?",
-        ":DISP:ANGL %g",
+        ":DISP:ANGL?;",
+        ":DISP:ANGL %g;",
         """ A property that changes the veiwing angle of the instrument.""",
         validator=strict_discrete_range,
         values=[1, 7],
     )
 
     display_time_format = Instrument.control(
-        ":DISP:ANN:CLOCK:DATE:FORMAT?",
-        ":DISP:ANN:CLOCK:DATE:FORMAT %g",
+        ":DISP:ANN:CLOCK:DATE:FORMAT?;",
+        ":DISP:ANN:CLOCK:DATE:FORMAT %g;",
         """ A property that represents the date format of the instrument.""",
         validator=strict_discrete_set,
         values=["MDY", "DMY"],
     )
 
     display_time = Instrument.control(
-        ":DISP:ANN:CLOCK?",
-        ":DISP:ANN:CLOCK %g",
+        ":DISP:ANN:CLOCK?;",
+        ":DISP:ANN:CLOCK %g;",
         """Turn off or on the time display on the instrument.""",
         validator=strict_discrete_set,
         values=["ON", "OFF", 0, 1],
     )
 
     display_title = Instrument.control(
-        ":DISP:ANN:TITLE:DATA?",
-        ":DISP:ANN:TITLE:DATA %g",
+        ":DISP:ANN:TITLE:DATA?;",
+        ":DISP:ANN:TITLE:DATA %g;",
         """Set the text of the title display on the instrument.""",
     )
 
     display = Instrument.setting(
-        ":DISP:ENABLE %g",
+        ":DISP:ENABLE %g;",
         """Turn off or on the display on the instrument.""",
         validator=strict_discrete_set,
         values=["ON", "OFF", 0, 1],
@@ -445,7 +448,7 @@ class AgilentE4407B(Instrument):
     # Fetch commands
     # Mass memory commands
     catalog = Instrument.measurement(
-        ":MMEM:CAT? %g",
+        ":MMEM:CAT? %g;",
         """A command that returns the list of mass memory files in specified drive.""",
         validator=strict_discrete_set,
         values=["A:", "C:"],
@@ -464,16 +467,16 @@ class AgilentE4407B(Instrument):
         self.write(f":MMEM:DATA {filename},{data_block}")
 
     recive_file = Instrument.measurement(
-        ":MMEM:DATA? %g",
+        ":MMEM:DATA? %g;",
         """A command that returns the contents of a file.""",
     )
     delet_file = Instrument.setting(
-        ":MMEM:DEL %g",
+        ":MMEM:DEL %g;",
         """A command that deletes a file from the mass memory.""",
     )
 
     save_screen = Instrument.setting(
-        ":MMEM:STOR:SCR %g",
+        ":MMEM:STOR:SCR %g;",
         """Save the current screen to the specified mass memory. eg C:myscreen.gif""",
     )
 
@@ -488,16 +491,16 @@ class AgilentE4407B(Instrument):
 
     # Format commands
     byte_order = Instrument.control(
-        ":FORM:BORD?",
-        ":FORM:BORD %g",
+        ":FORM:BORD?;",
+        ":FORM:BORD %g;",
         """ A property that controls the binary data byte order for transfer.""",
         validator=strict_discrete_set,
         values=["NORM", "SWAP"],
     )
 
     num_format = Instrument.control(
-        ":FORM:DATA?",
-        ":FORM:DATA %g",
+        ":FORM:DATA?;",
+        ":FORM:DATA %g;",
         """ A property that controls the numerical data format for transfer.""",
         validator=strict_discrete_set,
         values=["ASC", "ASCII", "INT,32", "REAL,32", "REAL,64"],
@@ -507,24 +510,24 @@ class AgilentE4407B(Instrument):
     # input commands
     # unit commands
     mesure_units = Instrument.control(
-        ":UNIT:POW?",
-        ":UNIT:POW %g",
+        ":UNIT:POW?;",
+        ":UNIT:POW %g;",
         """ A property that controls the units for input, output, and display.""",
         validator=strict_discrete_set,
         values=["DBM", "DBMV", "DBUV", "V", "W"],
     )
     # trigger commands
     trigger_source = Instrument.control(
-        ":TRIG:SOUR?",
-        ":TRIG:SOUR %g",
+        ":TRIG:SOUR?;",
+        ":TRIG:SOUR %g;",
         """ A property that controls the trigger source.""",
         validator=strict_discrete_set,
         values=["IMM", "VID", "LINE", "EXT"],
     )
 
     video_trigger_level = Instrument.control(
-        ":TRIG:VID:LEV?",
-        ":TRIG:VID:LEV %g",
+        ":TRIG:VID:LEV?;",
+        ":TRIG:VID:LEV %g;",
         """ A property that controls the video trigger level.""",
     )
 
@@ -549,55 +552,55 @@ class AgilentE4407B(Instrument):
         return self.ask(f":TRAC? TRACE{trace}")
 
     get_raw_trace = Instrument.measurement(
-        ":TRAC? rawtrace",
+        ":TRAC? rawtrace;",
         """Get raw trace from the instrument.""",
     )
     peaks = Instrument.measurement(
-        ":TRAC:MATH:PEAK?",
+        ":TRAC:MATH:PEAK?;",
         """Get peaks from the instrument.""",
     )
     peaks_number = Instrument.measurement(
-        ":TRAC:MATH:PEAK:POIN?",
+        ":TRAC:MATH:PEAK:POIN?;",
         """Get the number of peaks from the instrument.""",
     )
     peak_sorting = Instrument.control(
-        ":TRAC:MATH:PEAK:SORT?",
-        ":TRAC:MATH:PEAK:SORT %g",
+        ":TRAC:MATH:PEAK:SORT?;",
+        ":TRAC:MATH:PEAK:SORT %g;",
         """ determine werther to sort peaks by frequency or amplitude""",
         validator=strict_discrete_set,
         values=["FREQ", "AMPL"],
     )
     peak_threshold = Instrument.control(
-        ":TRAC:MATH:PEAK:THRES?",
-        ":TRAC:MATH:PEAK:THRES %g",
+        ":TRAC:MATH:PEAK:THRES?;",
+        ":TRAC:MATH:PEAK:THRES %g;",
         """ determine werther to sort peaks by frequency or amplitude""",
         validator=strict_discrete_set,
         values=["FREQ", "AMPL"],
     )
     peak_width = Instrument.control(
-        ":TRAC:MATH:PEAK:WID?",
-        ":TRAC:MATH:PEAK:WID %g",
+        ":TRAC:MATH:PEAK:WID?;",
+        ":TRAC:MATH:PEAK:WID %g;",
         """ determine werther to sort peaks by frequency or amplitude""",
         validator=strict_discrete_set,
         values=["FREQ", "AMPL"],
     )
     peak_width_units = Instrument.control(
-        ":TRAC:MATH:PEAK:WID:UNIT?",
-        ":TRAC:MATH:PEAK:WID:UNIT %g",
+        ":TRAC:MATH:PEAK:WID:UNIT?;",
+        ":TRAC:MATH:PEAK:WID:UNIT %g;",
         """ determine werther to sort peaks by frequency or amplitude""",
         validator=strict_discrete_set,
         values=["POINTS", "SECONDS"],
     )
     peak_width_type = Instrument.control(
-        ":TRAC:MATH:PEAK:WID:TYPE?",
-        ":TRAC:MATH:PEAK:WID:TYPE %g",
+        ":TRAC:MATH:PEAK:WID:TYPE?;",
+        ":TRAC:MATH:PEAK:WID:TYPE %g;",
         """ determine werther to sort peaks by frequency or amplitude""",
         validator=strict_discrete_set,
         values=["PEAK", "RMS"],
     )
     peak_width_type = Instrument.control(
-        ":TRAC:MATH:PEAK:WID:TYPE?",
-        ":TRAC:MATH:PEAK:WID:TYPE %g",
+        ":TRAC:MATH:PEAK:WID:TYPE?;",
+        ":TRAC:MATH:PEAK:WID:TYPE %g;",
         """ determine werther to sort peaks by frequency or amplitude""",
         validator=strict_discrete_set,
         values=["PEAK", "RMS"],
@@ -618,9 +621,12 @@ class AgilentE4407B(Instrument):
         """Returns a numpy array of the data for a particular trace
         based on the trace number (1, 2, or 3).
         """
+        
         self.write(":FORMat:TRACe:DATA ASCII")
+
+        sleep(0.1)
         data = np.loadtxt(
-            StringIO(self.ask(":TRACE:DATA? TRACE%d" % number)),
+            StringIO(re.sub("#\\d*  ", "", self.ask(":TRACE:DATA? TRACE%d " % number))),
             delimiter=",",
             dtype=np.float64,
         )
