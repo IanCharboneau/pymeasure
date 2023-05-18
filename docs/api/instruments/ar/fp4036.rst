@@ -1,0 +1,7 @@
+####################
+Amplifier Research FP4036
+####################
+
+.. autoclass:: pymeasure.instruments.ar.FP4036
+    :members:
+    :show-inheritance:
