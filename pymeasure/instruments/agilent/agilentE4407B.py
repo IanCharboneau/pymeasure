@@ -332,18 +332,6 @@ class AgilentE4407B(Instrument):
         """
         self.write("SYS:CONF:SYST?")
 
-    def hardware_configuration(self):
-        """
-        A command that returns information about the current hardware in the instrument.
-        """
-        self.write("SYS:CONF:HARD?")
-
-    def system_configuration(self):
-        """
-        A command that returns information about the configuration in the instrument.
-        """
-        self.write("SYS:CONF:SYST?")
-
     recall = Instrument.setting(
         "*RCL %g;",
         """Recall the instrument state from specified memory resgister.""",
@@ -380,16 +368,6 @@ class AgilentE4407B(Instrument):
         """A string property that returns the options of the instrument.
         """,
     )
-
-    date = Instrument.control(
-        "SYS:DATE?",
-        "SYS:DATE %g",
-        """Set the date of the instrument. <year>,<month>,<day> ####,##,##""",
-    )
-
-    error_queue = Instrument.measurement(":SYST:ERR?")
-
-    options = Instrument.measurement("SYS:OPT?")
 
     preset_type = Instrument.setting(
         ":SYST:PRES:TYPE %g;",
