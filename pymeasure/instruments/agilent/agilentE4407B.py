@@ -30,11 +30,7 @@ from pymeasure.instruments.validators import (
     strict_discrete_set,
     truncated_discrete_set,
     truncated_range,
-    discreteTruncate,
-    strict_range,
-    modular_range,
-    joined_validators,
-
+    pint_validator
 )
 
 from io import StringIO
@@ -43,24 +39,15 @@ import pandas as pd
 import re
 import pint
 from pint import UnitRegistry
-ureg = UnitRegistry()
-Hz = ureg.Hz
-MHz = ureg.MHz
-kHz = ureg.kHz
-GHz = ureg.GHz
-dbm = ureg.dBm
-db = ureg.dB
-
+# ureg = UnitRegistry()
 
 class AgilentE4407B(Instrument):
     """Represents the AgilentE4407B Spectrum Analyzer
     and provides a high-level interface for taking scans of
     high-frequency spectrums
     """
-    United = False
-    ureg = None
-    joined_v = joined_validators(strict_discrete_set, strict_range)
-    joined_v2 = joined_validators(strict_range, strict_range)
+
+
     def __init__(self, resourceName, **kwargs):
         super().__init__(resourceName, "Agilent E4407B Spectrum Analyzer", **kwargs)
         # check if the unit registry is passed in the kwargs
@@ -68,34 +55,32 @@ class AgilentE4407B(Instrument):
 
 
     start_frequency = Instrument.control(
-      
-        ":SENS:FREQ:STAR?;",
-        ":SENS:FREQ:STAR %s;",
-        # ":SENS:FREQ:STAR %g Hz;",
+        ":SENS:FREQ:STAR?",
+        ":SENS:FREQ:STAR %g",
         """ A floating point property that represents the start frequency
         in Hz. This property can be set.
         """,
-        # check_set_errors= True,
-        validator=strict_range,
-        values=[9*kHz, 26.5*GHz],     
+        validator=pint_validator,
+        values=[9000, 26500000000],
+        # get_process=lambda x: np.float32(re.search("[0-9]+\.[0-9]+", x).group())
+        # * np.power(10, int(re.search("\+[0-9]{3}]", x).group())),
     )
     
     stop_frequency = Instrument.control(
-        ":SENS:FREQ:STOP?;",
-        ":SENS:FREQ:STOP %g;",
-        # ":SENS:FREQ:STOP %g Hz;",
+        ":SENS:FREQ:STOP?",
+        ":SENS:FREQ:STOP %g",
         """ A floating point property that represents the stop frequency
         in Hz. This property can be set.
         """,
-        validator=truncated_range,
+        validator=pint_validator,
         values=[9000, 26500000000],
         # get_process=lambda x: np.float32(re.search("[0-9]+\.[0-9]+", x).group())
         # * np.power(10, int(re.search("\+([0-9]{3}])", x).group())),
     )
 
     frequency_step = Instrument.control(
-        ":SENS:FREQ:CENT:STEP:INCR?;",
-        ":SENS:FREQ:CENT:STEP:INCR %g ;",
+        ":SENS:FREQ:CENT:STEP:INCR?",
+        ":SENS:FREQ:CENT:STEP:INCR %g",
         """ A floating point property that represents the frequency step
         in Hz. This property can be set.
         """,
@@ -193,6 +178,7 @@ class AgilentE4407B(Instrument):
     )
 
     # Sensor commands
+    # dectector commands
     resolution_bandwidth = Instrument.control(
         ":SENS:BAND:RES?;",
         ":SENS:BAND:RES %g;",
@@ -595,7 +581,7 @@ class AgilentE4407B(Instrument):
         A command that copies a file to another.
         """
         self.write(":MMEM:COPY %s,%s" % (source, destination))
-
+        
     def send_file(self, filename, data_block):
         """
         A command that sends a file to the instrument.
@@ -715,7 +701,6 @@ class AgilentE4407B(Instrument):
     #     """Transfer a trace from the controller to the instrument."""
 
     #     destination = strict_discrete_set(destination, [1,2 , 3,])
-
     #     self.write(f":TRAC TRACE{source})
 
     def get_trace(self, trace):

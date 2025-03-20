@@ -1,7 +1,7 @@
 #
 # This file is part of the PyMeasure package.
 #
-# Copyright (c) 2013-2022 PyMeasure Developers
+# Copyright (c) 2013-2023 PyMeasure Developers
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -23,7 +23,34 @@
 #
 
 from decimal import Decimal
+from typing import Union
+import pint
+from pint import UnitRegistry
 
+
+
+def pint_validator(value, values):
+    """ Provides a validator function that returns the value
+    if it is in the range. Otherwise it raises a ValueError.
+
+    :param value: A value to test
+    :param values: A range of values (range, list, etc.)
+    :raises: ValueError if the value is out of the range
+    """
+    if type(value) == 'pint.Quantity':
+        value = value.to("Hz")
+        # print(value, type(value))
+        pint_values = values*ureg.Hz
+        if min(pint_values) <= value <= max(pint_values):
+            return True
+    elif type(value) != ureg.Quantity:
+        
+        if min(values) <= value <= max(values):
+            return True
+    else:
+        raise ValueError('Value of {:g} is not in range [{:g},{:g}]'.format(
+            value, min(values), max(values)
+        ))
 
 def strict_range(value, values):
     """ Provides a validator function that returns the value
