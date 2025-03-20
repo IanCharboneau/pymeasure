@@ -39,7 +39,7 @@ import pandas as pd
 import re
 import pint
 from pint import UnitRegistry
-# ureg = UnitRegistry()
+ureg = UnitRegistry()
 
 class AgilentE4407B(Instrument):
     """Represents the AgilentE4407B Spectrum Analyzer
@@ -48,8 +48,15 @@ class AgilentE4407B(Instrument):
     """
 
 
-    def __init__(self, resourceName, **kwargs):
-        super().__init__(resourceName, "Agilent E4407B Spectrum Analyzer", **kwargs)
+    def __init__(self, adapter, name="Agilent E4408B Spectrum Analyzer", **kwargs):
+        super().__init__(
+            adapter,
+            name,
+            **kwargs
+        )
+
+    # def __init__(self, resourceName, **kwargs):
+    #     super().__init__(resourceName, "Agilent E4407B Spectrum Analyzer", **kwargs)
 
     # frequency Setting commands
     start_frequency = Instrument.control(
@@ -58,10 +65,12 @@ class AgilentE4407B(Instrument):
         """ A floating point property that represents the start frequency
         in Hz. This property can be set.
         """,
+        
         validator=pint_validator,
         values=[9000, 26500000000],
         # get_process=lambda x: np.float32(re.search("[0-9]+\.[0-9]+", x).group())
         # * np.power(10, int(re.search("\+[0-9]{3}]", x).group())),
+        
     )
     stop_frequency = Instrument.control(
         ":SENS:FREQ:STOP?",
@@ -88,9 +97,9 @@ class AgilentE4407B(Instrument):
         """ A floating point property that represents the center frequency
         in Hz. This property can be set.
         """,
-        validator=truncated_range,
+        validator=pint_validator,
         values=[9000, 26500000000],
-        cast=int,
+        # cast=int,
     )
 
     span = Instrument.control(
@@ -487,9 +496,9 @@ class AgilentE4407B(Instrument):
         """
         A command that returns the contents of the screen.
         """
-        self.save_screen("C:tempScreen.gif")
-        data = self.recive_file("C:tempScreen.gif")
-        self.delet_file("C:tempScreen.gif")
+        self.save_screen("C:temp.gif")
+        data = self.recive_file("C:temp.gif")
+        self.delet_file("C:temp.gif")
         return data
 
     # Format commands

@@ -26,7 +26,8 @@ from decimal import Decimal
 from typing import Union
 import pint
 from pint import UnitRegistry
-
+ureg=UnitRegistry()
+import re
 
 
 def pint_validator(value, values):
@@ -37,20 +38,17 @@ def pint_validator(value, values):
     :param values: A range of values (range, list, etc.)
     :raises: ValueError if the value is out of the range
     """
-    if type(value) == 'pint.Quantity':
-        value = value.to("Hz")
-        # print(value, type(value))
-        pint_values = values*ureg.Hz
-        if min(pint_values) <= value <= max(pint_values):
-            return True
-    elif type(value) != ureg.Quantity:
-        
+    if re.search(r"Hz", str(value)):
+        value = value.to("Hz").magnitude
         if min(values) <= value <= max(values):
-            return True
+            return value
+        else:
+            raise ValueError(f'Value of {value} is not in pint range [{min(values)},{max(values)}]')
+    elif re.search(r"Hz", str(value)) == None:
+        if min(values) <= float(value) <= max(values):
+            return value
     else:
-        raise ValueError('Value of {:g} is not in range [{:g},{:g}]'.format(
-            value, min(values), max(values)
-        ))
+        raise ValueError(f'Value of {value} is not in pint range [{min(values)},{max(values)}]')
 
 def strict_range(value, values):
     """ Provides a validator function that returns the value
