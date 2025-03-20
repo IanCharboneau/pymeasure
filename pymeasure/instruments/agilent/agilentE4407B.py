@@ -30,13 +30,16 @@ from pymeasure.instruments.validators import (
     strict_discrete_set,
     truncated_discrete_set,
     truncated_range,
+    pint_validator
 )
 
 from io import StringIO
 import numpy as np
 import pandas as pd
 import re
-
+import pint
+from pint import UnitRegistry
+# ureg = UnitRegistry()
 
 class AgilentE4407B(Instrument):
     """Represents the AgilentE4407B Spectrum Analyzer
@@ -44,8 +47,6 @@ class AgilentE4407B(Instrument):
     high-frequency spectrums
     """
 
-    def __init__(self, resourceName, **kwargs):
-        super().__init__(resourceName, "Agilent E4407B Spectrum Analyzer", **kwargs)
 
     def __init__(self, resourceName, **kwargs):
         super().__init__(resourceName, "Agilent E4407B Spectrum Analyzer", **kwargs)
@@ -57,7 +58,7 @@ class AgilentE4407B(Instrument):
         """ A floating point property that represents the start frequency
         in Hz. This property can be set.
         """,
-        validator=truncated_range,
+        validator=pint_validator,
         values=[9000, 26500000000],
         # get_process=lambda x: np.float32(re.search("[0-9]+\.[0-9]+", x).group())
         # * np.power(10, int(re.search("\+[0-9]{3}]", x).group())),
@@ -68,7 +69,7 @@ class AgilentE4407B(Instrument):
         """ A floating point property that represents the stop frequency
         in Hz. This property can be set.
         """,
-        validator=truncated_range,
+        validator=pint_validator,
         values=[9000, 26500000000],
         # get_process=lambda x: np.float32(re.search("[0-9]+\.[0-9]+", x).group())
         # * np.power(10, int(re.search("\+([0-9]{3}])", x).group())),
