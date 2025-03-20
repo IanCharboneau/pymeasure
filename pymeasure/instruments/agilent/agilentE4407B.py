@@ -30,12 +30,26 @@ from pymeasure.instruments.validators import (
     strict_discrete_set,
     truncated_discrete_set,
     truncated_range,
+    discreteTruncate,
+    strict_range,
+    modular_range,
+    joined_validators,
+
 )
 
 from io import StringIO
 import numpy as np
 import pandas as pd
 import re
+import pint
+from pint import UnitRegistry
+ureg = UnitRegistry()
+Hz = ureg.Hz
+MHz = ureg.MHz
+kHz = ureg.kHz
+GHz = ureg.GHz
+dbm = ureg.dBm
+db = ureg.dB
 
 
 class AgilentE4407B(Instrument):
@@ -43,23 +57,29 @@ class AgilentE4407B(Instrument):
     and provides a high-level interface for taking scans of
     high-frequency spectrums
     """
-
+    United = False
+    ureg = None
+    joined_v = joined_validators(strict_discrete_set, strict_range)
+    joined_v2 = joined_validators(strict_range, strict_range)
     def __init__(self, resourceName, **kwargs):
         super().__init__(resourceName, "Agilent E4407B Spectrum Analyzer", **kwargs)
+        # check if the unit registry is passed in the kwargs
+        
 
-    # frequency Setting commands
+
     start_frequency = Instrument.control(
+      
         ":SENS:FREQ:STAR?;",
-        ":SENS:FREQ:STAR %g;",
+        ":SENS:FREQ:STAR %s;",
         # ":SENS:FREQ:STAR %g Hz;",
         """ A floating point property that represents the start frequency
         in Hz. This property can be set.
         """,
-        validator=truncated_range,
-        values=[9000, 26500000000],
-        # get_process=lambda x: np.float32(re.search("[0-9]+\.[0-9]+", x).group())
-        # * np.power(10, int(re.search("\+[0-9]{3}]", x).group())),
+        # check_set_errors= True,
+        validator=strict_range,
+        values=[9*kHz, 26.5*GHz],     
     )
+    
     stop_frequency = Instrument.control(
         ":SENS:FREQ:STOP?;",
         ":SENS:FREQ:STOP %g;",
@@ -75,7 +95,7 @@ class AgilentE4407B(Instrument):
 
     frequency_step = Instrument.control(
         ":SENS:FREQ:CENT:STEP:INCR?;",
-        ":SENS:FREQ:CENT:STEP:INCR %g Hz;",
+        ":SENS:FREQ:CENT:STEP:INCR %g ;",
         """ A floating point property that represents the frequency step
         in Hz. This property can be set.
         """,
@@ -88,7 +108,7 @@ class AgilentE4407B(Instrument):
         """,
         validator=truncated_range,
         values=[9000, 26500000000],
-        cast=int,
+        cast=(int),
     )
 
     span = Instrument.control(
@@ -291,6 +311,122 @@ class AgilentE4407B(Instrument):
         in dBm. This property can be set.
         """,
     )
+
+    # Measurement commands
+    def measure_off(self):
+        """A Command that deactivates the instrument measurement function."""
+        self.write(":CONF:SAN")
+   
+   
+    def channel_power (self):
+        """ A Command that activates the instrument Channel Power Function."""
+        self.write(":CONF:CHP"),
+    
+    channel_power_average_count = Instrument.control(
+        "SENS:CHP:AVER:COUNT?;",
+        "SENS:CHP:AVER:COUNT %g;",
+        """ A Command that sets the number of averages for the channel power function.""",
+        Validator=truncated_discrete_set,
+        values=[1, 1000],
+    )
+    channel_power_average_state = Instrument.control(
+        "SENS:CHP:AVER:STATE?;",
+        "SENS:CHP:AVER:STATE %s;",
+        """ A Command that sets the state of the channel power averaging function.""",
+        Validator=joined_v,
+        values=[["ON","OFF"],range(2)],
+    )
+    channel_power_average_mode = Instrument.control(
+        "SENS:CHP:AVER:TCON?;",
+        "SENS:CHP:AVER:TCON %g;",
+        """ A Command that sets the type of averaging for the channel power function.
+        AVG Mode EXP - each successive data acquisition after the average count is reached is exponentially weighted.
+        and combined with the existing average. EXP averaging weights new data more than old data.
+        
+        AVG Mode Repeat (REP) - After reaching the average count all previous data is cleared and the average count is set back to 1.""",
+        Validator=strict_discrete_set,
+        values=["EXP","REP"],
+    )
+    channel_power_integration_bandwidth = Instrument.control(
+        "CHP:BAND:INT?;",
+        "CHP:BAND:INT %g;",
+        """ A Command that sets the integration bandwidth for the channel power function.""",
+    )
+    channel_power_span = Instrument.control(
+        "SENS:CHP:FREQ:SPAN?;",
+        "SENS:CHP:FREQ:SPAN %g;",
+        """ A Command that sets the span for the channel power function.""",
+    )
+
+    def OBW (self):
+        self.write(":CONF:OBW"),
+        """ A Command that activates the instrument Occupied Bandwidth Function.""",
+    
+    OBW_average_count = Instrument.control(
+        "SENS:OBW:AVER:COUNT?;",
+        "SENS:OBW:AVER:COUNT %g;",
+        """ A Command that sets the number of averages for the Occupied Bandwidth function.""",
+        Validator=truncated_discrete_set,
+        values=[1, 1000],
+        )
+    
+    OBW_average_state = Instrument.control(
+        "SENS:OBW:AVER:STATE?;",
+        "SENS:OBW:AVER:STATE %g;",
+        """ A Command that sets the state of the Occupied Bandwidth averaging function.""",
+        Validator=strict_discrete_set,
+        values=["ON","OFF",0, 1],
+        )
+
+    OBW_average_mode = Instrument.control(
+        "SENS:OBW:AVER:TCON?;",
+        "SENS:OBW:AVER:TCON %g;",
+         """ A Command that sets the type of averaging for the channel power function.
+        AVG Mode EXP - each successive data acquisition after the average count is reached is exponentially weighted.
+        and combined with the existing average. EXP averaging weights new data more than old data.
+        
+        AVG Mode Repeat (REP) - After reaching the average count all previous data is cleared and the average count is set back to 1.""",
+        Validator=strict_discrete_set,
+        values=["EXP","REP"],
+        )
+    
+    OBW_max_hold = Instrument.control(
+        "SENS:OBW:MAXHOLD?;",
+        "SENS:OBW:MAXHOLD %g;",
+        """ A Command that sets the state of the Occupied Bandwidth maximum hold function.""",
+        Validator=strict_discrete_set,
+        values=["ON","OFF",0, 1],
+        )
+
+    OBW_power_percent = Instrument.control(
+        "SENS:OBW:POW:PERCENT?;",
+        "SENS:OBW:POW:PERCENT %g;",
+        """ A Command that sets the percentage of the power that the Occupied Bandwidth is measured from
+        1% to 99%.""",
+        Validator=truncated_discrete_set,
+        values=[1, 99],
+        )
+    
+    OBW_span = Instrument.control(
+        "SENS:OBW:SPAN?;",
+        "SENS:OBW:SPAN %g;",
+        """ A Command that sets the span for the Occupied Bandwidth function.""",
+        )
+    
+    OBW_xdB = Instrument.control(
+        "SENS:OBW:XDB?;",
+        "SENS:OBW:XDB %g;",
+        """ A Command that sets the level of the Occupied Bandwidth function.
+        Range -100.0 dB to -0.1 dB.""",
+        Validator=truncated_discrete_set,
+        values=[-100.0, -0.1],
+        )
+
+    
+
+
+
+
     # system commands
 
     def reset(self):
@@ -466,27 +602,50 @@ class AgilentE4407B(Instrument):
         """
         self.write(f":MMEM:DATA {filename},{data_block}")
 
-    recive_file = Instrument.measurement(
-        ":MMEM:DATA? %g;",
-        """A command that returns the contents of a file.""",
-    )
+    def recive_file (self, filename):
+        
+        return self.adapter.connection.query_binary_values(
+                f":MMEM:DATA? \"{filename}\";",
+                datatype="s",
+                container=bytes,
+            )
+        
+
     delet_file = Instrument.setting(
-        ":MMEM:DEL %g;",
+        ":MMEM:DEL \"%s\";",
         """A command that deletes a file from the mass memory.""",
     )
 
     save_screen = Instrument.setting(
-        ":MMEM:STOR:SCR %g;",
+        ":MMEM:STOR:SCR \"%s\" ;",
         """Save the current screen to the specified mass memory. eg C:myscreen.gif""",
     )
+   
+    full_screen = Instrument.setting(
+        ":DISP:FSCR %g ;",
+        """ Turn full screen OFF or ON""",
+        validator=strict_discrete_set,
+        values=["ON", "OFF", 0, 1],
+        )
 
-    def get_screen(self):
+    screen_annotation = Instrument.setting(
+        ":DISP:ANN:DATA %s ;",
+        """ Set the annotation on the screen""",
+    )
+
+    def get_screen(self, annotation=None):
         """
         A command that returns the contents of the screen.
         """
-        self.save_screen("C:tempScreen.gif")
-        data = self.recive_file("C:tempScreen.gif")
-        self.delet_file("C:tempScreen.gif")
+        if annotation is not None:
+            self.screen_annotation = annotation
+        
+        pic = "C:\\TEMP.GIF" # path must be less than a certain amount of characters
+        self.full_screen = "ON"
+        self.save_screen = pic
+        data = self.recive_file (pic)
+        self.delet_file = pic
+        self.full_screen = "OFF"
         return data
 
     # Format commands
@@ -509,18 +668,21 @@ class AgilentE4407B(Instrument):
     # initaite commands
     # input commands
     # unit commands
-    mesure_units = Instrument.control(
+    measure_units = Instrument.control(
         ":UNIT:POW?;",
         ":UNIT:POW %g;",
-        """ A property that controls the units for input, output, and display.""",
+        """ A property that controls the units Y Axis Unit of the Instrument.
+        The available units are DBM, DBMV, DBUV, V, W, DVUA, A.""",
         validator=strict_discrete_set,
-        values=["DBM", "DBMV", "DBUV", "V", "W"],
+        values=["DBM", "DBMV", "DBUV", "V", "W","DVUA","A"],
     )
     # trigger commands
     trigger_source = Instrument.control(
         ":TRIG:SOUR?;",
         ":TRIG:SOUR %g;",
-        """ A property that controls the trigger source.""",
+        """ A property that controls the trigger source.
+        IMM = Free Run, VID = Video, LINE = Line, EXT = External
+        If external is selected, need to set slope""",
         validator=strict_discrete_set,
         values=["IMM", "VID", "LINE", "EXT"],
     )
@@ -529,6 +691,16 @@ class AgilentE4407B(Instrument):
         ":TRIG:VID:LEV?;",
         ":TRIG:VID:LEV %g;",
         """ A property that controls the video trigger level.""",
+    )
+
+    external_slope = Instrument.control(
+        ":TRIG:EXT:SLOP?;",
+        ":TRIG:EXT:SLOP %g;",
+        """ A property that controls the external trigger slope.
+        POS = Positive, NEG = Negative
+        """,
+        validator=strict_discrete_set,
+        values=["POS", "NEG"],
     )
 
     # trace commands
