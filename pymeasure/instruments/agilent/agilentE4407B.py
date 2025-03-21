@@ -102,6 +102,11 @@ class AgilentE4407B(Instrument):
         """,
     )
 
+    def marker_peak (self,trace = 1):
+        """ A command that sets the marker to the peak value.""",
+        self.write(f":CALC:MARK{trace}:MAX"),
+            
+
     def full_span(self):
         """Sets the span to the full span of the instrument."""
         self.write(":SENS:FREQ:SPAN:FULL")
