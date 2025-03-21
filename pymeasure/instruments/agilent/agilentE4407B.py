@@ -60,12 +60,8 @@ class AgilentE4407B(Instrument):
         """ A floating point property that represents the start frequency
         in Hz. This property can be set.
         """,
-        
         validator=pint_validator,
-        values=[9000, 26500000000],
-        # get_process=lambda x: np.float32(re.search("[0-9]+\.[0-9]+", x).group())
-        # * np.power(10, int(re.search("\+[0-9]{3}]", x).group())),
-        
+        values=[9000, 26500000000],       
     )
     
     stop_frequency = Instrument.control(
@@ -314,15 +310,16 @@ class AgilentE4407B(Instrument):
         "SENS:CHP:AVER:COUNT?;",
         "SENS:CHP:AVER:COUNT %g;",
         """ A Command that sets the number of averages for the channel power function.""",
-        Validator=truncated_discrete_set,
+
+        validator=truncated_discrete_set,
         values=[1, 1000],
     )
     channel_power_average_state = Instrument.control(
         "SENS:CHP:AVER:STATE?;",
         "SENS:CHP:AVER:STATE %s;",
         """ A Command that sets the state of the channel power averaging function.""",
-        Validator=joined_v,
-        values=[["ON","OFF"],range(2)],
+        validator=strict_discrete_set,
+        values=["ON","OFF",0,1],
     )
     channel_power_average_mode = Instrument.control(
         "SENS:CHP:AVER:TCON?;",
@@ -332,7 +329,7 @@ class AgilentE4407B(Instrument):
         and combined with the existing average. EXP averaging weights new data more than old data.
         
         AVG Mode Repeat (REP) - After reaching the average count all previous data is cleared and the average count is set back to 1.""",
-        Validator=strict_discrete_set,
+        validator=strict_discrete_set,
         values=["EXP","REP"],
     )
     channel_power_integration_bandwidth = Instrument.control(
@@ -354,7 +351,7 @@ class AgilentE4407B(Instrument):
         "SENS:OBW:AVER:COUNT?;",
         "SENS:OBW:AVER:COUNT %g;",
         """ A Command that sets the number of averages for the Occupied Bandwidth function.""",
-        Validator=truncated_discrete_set,
+        validator=truncated_discrete_set,
         values=[1, 1000],
         )
     
@@ -362,7 +359,7 @@ class AgilentE4407B(Instrument):
         "SENS:OBW:AVER:STATE?;",
         "SENS:OBW:AVER:STATE %g;",
         """ A Command that sets the state of the Occupied Bandwidth averaging function.""",
-        Validator=strict_discrete_set,
+        validator=strict_discrete_set,
         values=["ON","OFF",0, 1],
         )
 
@@ -374,7 +371,7 @@ class AgilentE4407B(Instrument):
         and combined with the existing average. EXP averaging weights new data more than old data.
         
         AVG Mode Repeat (REP) - After reaching the average count all previous data is cleared and the average count is set back to 1.""",
-        Validator=strict_discrete_set,
+        validator=strict_discrete_set,
         values=["EXP","REP"],
         )
     
@@ -382,7 +379,7 @@ class AgilentE4407B(Instrument):
         "SENS:OBW:MAXHOLD?;",
         "SENS:OBW:MAXHOLD %g;",
         """ A Command that sets the state of the Occupied Bandwidth maximum hold function.""",
-        Validator=strict_discrete_set,
+        validator=strict_discrete_set,
         values=["ON","OFF",0, 1],
         )
 
@@ -391,7 +388,7 @@ class AgilentE4407B(Instrument):
         "SENS:OBW:POW:PERCENT %g;",
         """ A Command that sets the percentage of the power that the Occupied Bandwidth is measured from
         1% to 99%.""",
-        Validator=truncated_discrete_set,
+        validator=truncated_discrete_set,
         values=[1, 99],
         )
     
@@ -406,7 +403,7 @@ class AgilentE4407B(Instrument):
         "SENS:OBW:XDB %g;",
         """ A Command that sets the level of the Occupied Bandwidth function.
         Range -100.0 dB to -0.1 dB.""",
-        Validator=truncated_discrete_set,
+        validator=truncated_discrete_set,
         values=[-100.0, -0.1],
         )
 
@@ -571,7 +568,7 @@ class AgilentE4407B(Instrument):
     # Mesurement commands
     # Fetch commands
     # Mass memory commands
-    catalog = Instrument.measurement(
+    catalog = Instrument.setting(
         ":MMEM:CAT? %g;",
         """A command that returns the list of mass memory files in specified drive.""",
         validator=strict_discrete_set,
@@ -629,11 +626,11 @@ class AgilentE4407B(Instrument):
             self.screen_annotation = annotation
         
         pic = "C:\\TEMP.GIF" # path must be less than a certain amount of characters
-        self.full_screen = "ON"
+        self.full_screen = 1
         self.save_screen = pic
         data = self.recive_file (pic)
         self.delet_file = pic
-        self.full_screen = "OFF"
+        self.full_screen = 0
         return data
 
     # Format commands
