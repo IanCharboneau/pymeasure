@@ -1,7 +1,7 @@
 #
 # This file is part of the PyMeasure package.
 #
-# Copyright (c) 2013-2022 PyMeasure Developers
+# Copyright (c) 2013-2025 PyMeasure Developers
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -127,8 +127,24 @@ class CXN(Instrument):
     """
     # use predefined values method to allow reusing in the Channels
     values = values
-    presets = Instrument.ChannelCreator(PresetChannel, (1, 2, 3, 4, 5, 6, 7, 8, 9),
-                                        prefix="preset_")
+
+    preset_1 = Instrument.ChannelCreator(PresetChannel, 1)
+
+    preset_2 = Instrument.ChannelCreator(PresetChannel, 2)
+
+    preset_3 = Instrument.ChannelCreator(PresetChannel, 3)
+
+    preset_4 = Instrument.ChannelCreator(PresetChannel, 4)
+
+    preset_5 = Instrument.ChannelCreator(PresetChannel, 5)
+
+    preset_6 = Instrument.ChannelCreator(PresetChannel, 6)
+
+    preset_7 = Instrument.ChannelCreator(PresetChannel, 7)
+
+    preset_8 = Instrument.ChannelCreator(PresetChannel, 8)
+
+    preset_9 = Instrument.ChannelCreator(PresetChannel, 9)
 
     def __init__(self, adapter, name="T&C RF sputtering power supply", address=0, **kwargs):
         self.address = address
@@ -236,7 +252,7 @@ class CXN(Instrument):
         "Gi\x00\x01\x00\x00",
         """Get the device identification string.""",
         cast=str,
-        get_process=lambda d: d.decode()[2:-1].strip(),
+        get_process_list=lambda d: d.decode()[2:-1].strip(),
     )
 
     serial = Instrument.measurement(
@@ -250,7 +266,7 @@ class CXN(Instrument):
         "Gf\x00\x00\x00\x00",
         """Get the UI-processor and RF-processor firmware version numbers.""",
         preprocess_reply=lambda d: struct.unpack("BBBB", d),
-        get_process=lambda v: str.format("UI {}.{}, RF {}.{}", *v)
+        get_process_list=lambda v: str.format("UI {}.{}, RF {}.{}", *v)
     )
 
     pulse_params = Instrument.measurement(
@@ -269,7 +285,7 @@ class CXN(Instrument):
         "GP\x00\x00\x00\x00",
         """Get power readings for forward/reverse/load power in watts.""",
         preprocess_reply=lambda d: struct.unpack(">HHH", d),
-        get_process=lambda d: (float(d[0]) / 10, float(d[1]) / 10, float(d[2]) / 10),
+        get_process_list=lambda d: (float(d[0]) / 10, float(d[1]) / 10, float(d[2]) / 10),
     )
 
     status = Instrument.measurement(

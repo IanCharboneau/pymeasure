@@ -1,7 +1,7 @@
 #
 # This file is part of the PyMeasure package.
 #
-# Copyright (c) 2013-2023 PyMeasure Developers
+# Copyright (c) 2013-2025 PyMeasure Developers
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -23,14 +23,14 @@
 #
 
 import logging
-from pymeasure.instruments import Instrument
+from pymeasure.instruments import Instrument, SCPIUnknownMixin
 from pymeasure.instruments.lakeshore.lakeshore_base import LakeShoreTemperatureChannel
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
 
 
-class LakeShore224(Instrument):
+class LakeShore224(SCPIUnknownMixin, Instrument):
     """ Represents the Lakeshore 224 Temperature monitor and provides a high-level interface
     for interacting with the instrument. Note that the 224 provides 12 temperature input channels
     (A, B, C1-5, D1-5). This driver makes use of the :ref:`LakeShoreChannels`
@@ -43,11 +43,31 @@ class LakeShore224(Instrument):
         monitor.input_A.wait_for_temperature()  # Wait for the temperature on sensor A to stabilize.
     """
 
-    i_ch = Instrument.ChannelCreator(LakeShoreTemperatureChannel,
-                                     ['0', 'A', 'B',
-                                      'C1', 'C2', 'C3', 'C4', 'C5',
-                                      'D1', 'D2', 'D3', 'D4', 'D5'],
-                                     prefix='input_')
+    input_0 = Instrument.ChannelCreator(LakeShoreTemperatureChannel, 0)
+
+    input_A = Instrument.ChannelCreator(LakeShoreTemperatureChannel, 'A')
+
+    input_B = Instrument.ChannelCreator(LakeShoreTemperatureChannel, 'B')
+
+    input_C1 = Instrument.ChannelCreator(LakeShoreTemperatureChannel, 'C1')
+
+    input_C2 = Instrument.ChannelCreator(LakeShoreTemperatureChannel, 'C2')
+
+    input_C3 = Instrument.ChannelCreator(LakeShoreTemperatureChannel, 'C3')
+
+    input_C4 = Instrument.ChannelCreator(LakeShoreTemperatureChannel, 'C4')
+
+    input_C5 = Instrument.ChannelCreator(LakeShoreTemperatureChannel, 'C5')
+
+    input_D1 = Instrument.ChannelCreator(LakeShoreTemperatureChannel, 'D1')
+
+    input_D2 = Instrument.ChannelCreator(LakeShoreTemperatureChannel, 'D2')
+
+    input_D3 = Instrument.ChannelCreator(LakeShoreTemperatureChannel, 'D3')
+
+    input_D4 = Instrument.ChannelCreator(LakeShoreTemperatureChannel, 'D4')
+
+    input_D5 = Instrument.ChannelCreator(LakeShoreTemperatureChannel, 'D5')
 
     def __init__(self, adapter, name="Lakeshore Model 224 Temperature Controller", **kwargs):
         kwargs.setdefault('read_termination', "\r\n")

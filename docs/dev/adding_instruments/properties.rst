@@ -22,7 +22,7 @@ PyMeasure comes with three central convenience factory functions for making prop
 You can call them, however, as :code:`Instrument.control`, :code:`Instrument.measurement`, and :code:`Instrument.setting`.
 
 The :func:`Instrument.measurement <pymeasure.instruments.common_base.CommonBase.measurement>` function returns a property that can only read values from an instrument.
-For example, if our "Extreme 5000" has the :code:`*IDN?` command, we can write the following property to be added after the :code:`def __init__` line in our above example class, or added to the class after the fact as in the code here:
+For example, if our "Extreme 5000" has the :code:`:TEMP?` command, we can write the following property to be added after the :code:`def __init__` line in our above example class, or added to the class after the fact as in the code here:
 
 .. _Python properties: https://docs.python.org/3/howto/descriptor.html#properties
 
@@ -74,7 +74,7 @@ We can use this property to set the voltage to 100 mV, which will send the appro
 
 Finally, the :func:`Instrument.setting <pymeasure.instruments.common_base.CommonBase.setting>` function can only set, but not read values.
 
-Using the :func:`Instrument.control <pymeasure.instruments.common_base.CommonBase.control>`, :func:`Instrument.measurement <pymeasure.instruments.common_base.CommonBase.measurement>`, and :func:`Instrument.control <pymeasure.instruments.common_base.CommonBase.control>` functions, you can create a number of properties for basic measurements and controls.
+Using the :func:`Instrument.control <pymeasure.instruments.common_base.CommonBase.control>`, :func:`Instrument.measurement <pymeasure.instruments.common_base.CommonBase.measurement>`, and :func:`Instrument.setting <pymeasure.instruments.common_base.CommonBase.setting>` functions, you can create a number of properties for basic measurements and controls.
 
 The next sections detail additional features of the property factories.
 These allow you to write properties that cover specific ranges, or that have to map between a real value to one used in the command. Furthermore it is shown how to perform more complex processing of return values from your device.
@@ -92,7 +92,8 @@ In the examples below we assume you have imported the validators.
 
     from pymeasure.instruments.validators import strict_discrete_set, strict_range, truncated_range, truncated_discrete_set
 
-In many situations you will also need to process the return string in order to extract the wanted quantity or process a value before sending it to the device. The :func:`Instrument.control <pymeasure.instruments.common_base.CommonBase.control>`, :func:`Instrument.measurement <pymeasure.instruments.common_base.CommonBase.measurement>` and :func:`Instrument.setting <pymeasure.instruments.common_base.CommonBase.setting>` function also provide means to achieve this.
+In many situations you will also need to process the return string in order to extract the wanted quantity or process a value before sending it to the device.
+The :func:`Instrument.control <pymeasure.instruments.common_base.CommonBase.control>`, :func:`Instrument.measurement <pymeasure.instruments.common_base.CommonBase.measurement>` and :func:`Instrument.setting <pymeasure.instruments.common_base.CommonBase.setting>` functions also provide means to achieve this.
 
 In a restricted range
 ---------------------
@@ -373,12 +374,15 @@ The same can be also achieved by the `preprocess_reply` keyword argument to :fun
 Checking the instrument for errors
 **********************************
 If you need to separately ask your instrument about its error state after getting/setting, use the parameters :code:`check_get_errors` and :code:`check_set_errors` of :meth:`~pymeasure.instruments.common_base.CommonBase.control`, respectively.
-If those are enabled, the method :meth:`~pymeasure.instruments.Instrument.check_errors` will be called after device communication has concluded.
+If those are enabled, the methods :meth:`~pymeasure.instruments.Instrument.check_get_errors` and :meth:`~pymeasure.instruments.Instrument.check_set_errors`, respectively, will be called after device communication has concluded.
+In the default implementation, for simplicity both methods call :meth:`~pymeasure.instruments.Instrument.check_errors`.
+To read the automatic response of instruments that respond to every set command with an acknowledgment or error, override :meth:`~pymeasure.instruments.Instrument.check_set_errors` as needed.
+
 
 Using multiple values
 *********************
 Seldomly, you might need to send/receive multiple values in one command.
-The :func:`Instrument.control <pymeasure.instruments.common_base.CommonBase.control>` function can be used with multiple values at one time, passed as a tuple. Say, we may set voltages and frequencies in our "Extreme 5000", and the the commands for this are :code:`:VOLTFREQ?` and :code:`:VOLTFREQ <float>,<float>`, we could use the following property:
+The :func:`Instrument.control <pymeasure.instruments.common_base.CommonBase.control>` function can be used with multiple values at one time, passed as a tuple. Say, we may set voltages and frequencies in our "Extreme 5000", and the commands for this are :code:`:VOLTFREQ?` and :code:`:VOLTFREQ <float>,<float>`, we could use the following property:
 
 .. testcode::
 
@@ -406,7 +410,7 @@ Dynamic properties
 
 As described in previous sections, Python properties are a very powerful tool to easily code an instrument's programming interface.
 One very interesting feature provided in PyMeasure is the ability to adjust properties' behaviour in subclasses or dynamically in instances.
-This feature allows accomodating some interesting use cases with a very compact syntax.
+This feature allows accommodating some interesting use cases with a very compact syntax.
 
 Dynamic features of a property are enabled by setting its :code:`dynamic` parameter to :code:`True`.
 

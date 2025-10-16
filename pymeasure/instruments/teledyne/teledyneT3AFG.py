@@ -1,7 +1,7 @@
 #
 # This file is part of the PyMeasure package.
 #
-# Copyright (c) 2013-2023 PyMeasure Developers
+# Copyright (c) 2013-2025 PyMeasure Developers
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +24,7 @@
 
 import logging
 
-from pymeasure.instruments import Instrument, Channel
+from pymeasure.instruments import Instrument, Channel, SCPIMixin
 from pymeasure.instruments.validators import strict_range, strict_discrete_set
 
 log = logging.getLogger(__name__)
@@ -33,21 +33,22 @@ log.addHandler(logging.NullHandler())
 
 def get_process_generator_search(keyword, unit, type):
     """Generate a get_process method searching for keyword, stripping unit"""
+
     def selector(values):
         if keyword in values:
             try:
-                return type(values[values.index(keyword)+1].strip(unit))
+                return type(values[values.index(keyword) + 1].strip(unit))
             except (ValueError, IndexError):
                 # Something went quite wrong if the keyword exists but the value doesn't
                 return None
         else:
             # Wrong wavetype for this keyword
             return None
+
     return selector
 
 
 class SignalChannel(Channel):
-
     output_enabled = Channel.control(
         "C{ch}:OUTPut?",
         "C{ch}:OUTPut %s",
@@ -56,7 +57,7 @@ class SignalChannel(Channel):
         map_values=True,
         values={True: 'ON', False: 'OFF'},
         # Replace ON and OFF with True and False in both get and set
-        get_process=lambda x: True if x[0].split(' ')[1] == 'ON' else False,
+        get_process_list=lambda x: True if x[0].split(' ')[1] == 'ON' else False,
     )
 
     wavetype = Channel.control(
@@ -67,7 +68,7 @@ class SignalChannel(Channel):
         """,
         validator=strict_discrete_set,
         values=['SINE', 'SQUARE', 'RAMP', 'PULSE', 'NOISE', 'ARB', 'DC', 'PRBS', 'IQ'],
-        get_process=lambda x: x[1],
+        get_process_list=lambda x: x[1],
     )
 
     frequency = Channel.control(
@@ -77,7 +78,7 @@ class SignalChannel(Channel):
         Has no effect when WVTP is NOISE or DC.""",
         validator=strict_range,
         values=[0, 350e6],
-        get_process=get_process_generator_search('FRQ', 'HZ', float),
+        get_process_list=get_process_generator_search('FRQ', 'HZ', float),
         dynamic=True,
         check_set_errors=True,
     )
@@ -91,7 +92,7 @@ class SignalChannel(Channel):
         Amplitude is also limited by the channel max output amplitude.""",
         validator=strict_range,
         values=[-5, 5],
-        get_process=get_process_generator_search('AMP', 'V', float),
+        get_process_list=get_process_generator_search('AMP', 'V', float),
         dynamic=True,
         check_set_errors=True,
     )
@@ -105,7 +106,7 @@ class SignalChannel(Channel):
         Offset is also limited by the channel max output amplitude.""",
         validator=strict_range,
         values=[-5, 5],
-        get_process=get_process_generator_search('OFST', 'V', float),
+        get_process_list=get_process_generator_search('OFST', 'V', float),
         dynamic=True,
         check_set_errors=True,
     )
@@ -116,39 +117,44 @@ class SignalChannel(Channel):
         """Control the maximum output amplitude of the channel in volts peak to peak.""",
         validator=strict_range,
         values=[0, 20],
-        get_process=get_process_generator_search('MAX_OUTPUT_AMP', 'V', float),
+        get_process_list=get_process_generator_search('MAX_OUTPUT_AMP', 'V', float),
         dynamic=True,
     )
 
 
-class TeledyneT3AFG(Instrument):
+class TeledyneT3AFG(SCPIMixin, Instrument):
     """Represents the Teledyne T3AFG series of arbitrary waveform
     generator interface for interacting with the instrument.
 
-    Intially targeting T3AFG80, some features may not be available on
+    Initially targeting T3AFG80, some features may not be available on
     lower end models and features from higher end models are not
-    included here intially.
+    included here yet.
 
     Future improvements (help welcomed):
+
     - Add other OUTPut related controls like Load and Polarity
     - Add other Basic Waveform related controls like Period
     - Add frequency ranges per model
     - Add channel coupling control
 
     .. code-block: python
-    # Example assumes Ethernet (TCPIP) interface
-    generator=TeledyneT3AFG('TCPIP0::xxx.xxx.xxx.xxx::pppp::SOCKET')
-    generator.reset()
-    generator.ch_1.wavetype='SINE'
-    generator.ch_1.amplitude=2
-    generator.ch_1.output_enabled=True
+
+        # Example assumes Ethernet (TCPIP) interface
+        generator=TeledyneT3AFG('TCPIP0::xxx.xxx.xxx.xxx::pppp::SOCKET')
+        generator.reset()
+        generator.ch_1.wavetype='SINE'
+        generator.ch_1.amplitude=2
+        generator.ch_1.output_enabled=True
     """
 
-    channels = Instrument.ChannelCreator(SignalChannel, (1, 2))
+    ch_1 = Instrument.ChannelCreator(SignalChannel, 1)
+
+    ch_2 = Instrument.ChannelCreator(SignalChannel, 2)
 
     def __init__(self, adapter, name="Teledyne T3AFG", **kwargs):
         super().__init__(
-            adapter, name, includeSCPI=True,
+            adapter,
+            name,
             tcpip={'read_termination': '\n'},
             **kwargs
         )

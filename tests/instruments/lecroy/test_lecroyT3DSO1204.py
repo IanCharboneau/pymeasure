@@ -1,7 +1,7 @@
 #
 # This file is part of the PyMeasure package.
 #
-# Copyright (c) 2013-2023 PyMeasure Developers
+# Copyright (c) 2013-2025 PyMeasure Developers
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +24,8 @@
 
 import pytest
 
-from pymeasure.instruments.lecroy.lecroyT3DSO1204 import LeCroyT3DSO1204, sanitize_source
+from pymeasure.instruments.teledyne.teledyne_oscilloscope import sanitize_source
+from pymeasure.instruments.lecroy.lecroyT3DSO1204 import LeCroyT3DSO1204
 from pymeasure.test import expected_protocol
 
 INVALID_CHANNELS = ["INVALID_SOURCE", "C1 C2", "C1 MATH", "C1234567", "CHANNEL"]
@@ -376,6 +377,15 @@ def test_math_define():
     ) as instr:
         instr.math_define = ("channel2", "*", "channel4")
         assert instr.math_define == ["EQN", "'C2*C4'"]
+
+
+def test_acquisition_type_average():
+    with expected_protocol(
+        LeCroyT3DSO1204,
+        [("CHDR OFF", None),
+         ("ACQW?", "AVERAGE, 5")]
+    ) as instr:
+        assert instr.acquisition_type == ["average", 5]
 
 
 def test_math_vdiv():

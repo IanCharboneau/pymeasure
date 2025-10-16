@@ -1,7 +1,7 @@
 #
 # This file is part of the PyMeasure package.
 #
-# Copyright (c) 2013-2023 PyMeasure Developers
+# Copyright (c) 2013-2025 PyMeasure Developers
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -44,46 +44,45 @@ class EurotestHPP120256(Instrument):
 
     .. code-block:: python
 
-    hpp120256 = EurotestHPP120256("GPIB0::20::INSTR")
+        hpp120256 = EurotestHPP120256("GPIB0::20::INSTR")
 
-    print(hpp120256.id)
-    print(hpp120256.lam_status)
-    print(hpp120256.status)
+        print(hpp120256.id)
+        print(hpp120256.lam_status)
+        print(hpp120256.status)
 
-    hpp120256.ramp_to_zero(100.0)
+        hpp120256.ramp_to_zero(100.0)
 
-    hpp120256.voltage_ramp = 50.0  # V/s
-    hpp120256.current_limit = 2.0  # mA
-    inst.kill_enabled = True  # Enable over-current protection
-    time.sleep(1.0)  # Give time to enable kill
-    inst.output_enabled = True
-    time.sleep(1.0)  # Give time to output on
+        hpp120256.voltage_ramp = 50.0  # V/s
+        hpp120256.current_limit = 2.0  # mA
+        inst.kill_enabled = True  # Enable over-current protection
+        time.sleep(1.0)  # Give time to enable kill
+        inst.output_enabled = True
+        time.sleep(1.0)  # Give time to output on
 
-    abs_output_voltage_error = 0.02 # kV
+        abs_output_voltage_error = 0.02 # kV
 
-    hpp120256.wait_for_output_voltage_reached(abs_output_voltage_error, 1.0, 40.0)
+        hpp120256.wait_for_output_voltage_reached(abs_output_voltage_error, 1.0, 40.0)
 
-    # Here voltage HV output should be at 0.0 kV
+        # Here voltage HV output should be at 0.0 kV
 
-    print("Setting the output voltage to 1.0kV...")
-    hpp120256.voltage_setpoint = 1.0  # kV
+        print("Setting the output voltage to 1.0kV...")
+        hpp120256.voltage_setpoint = 1.0  # kV
 
-    # Now HV output should be rising to reach the 1.0kV at 50.0 V/s
+        # Now HV output should be rising to reach the 1.0kV at 50.0 V/s
 
-    hpp120256.wait_for_output_voltage_reached(abs_output_voltage_error, 1.0, 40.0)
+        hpp120256.wait_for_output_voltage_reached(abs_output_voltage_error, 1.0, 40.0)
 
-    # Here voltage HV output should be at 1.0 kV
+        # Here voltage HV output should be at 1.0 kV
 
-    hpp120256.shutdown()
+        hpp120256.shutdown()
 
-    hpp120256.wait_for_output_voltage_reached(abs_output_voltage_error, 1.0, 60.0)
+        hpp120256.wait_for_output_voltage_reached(abs_output_voltage_error, 1.0, 60.0)
 
-    # Here voltage HV output should be at 0.0 kV
+        # Here voltage HV output should be at 0.0 kV
 
-    inst.output_enabled = False
+        inst.output_enabled = False
 
-    # Now the HV voltage source is in safe state
-
+        # Now the HV voltage source is in safe state
     """
 
     VOLTAGE_RANGE = [0.0, 12.0]  # kVolts
@@ -127,7 +126,7 @@ class EurotestHPP120256(Instrument):
         # getter device response: "U, RANGE=3.000kV, VALUE=2.458kV"
         validator=strict_range,
         values=VOLTAGE_RANGE,
-        get_process=lambda r:
+        get_process_list=lambda r:
         float(EurotestHPP120256.regex.search(r[2].strip()).groups()[0])
     )
 
@@ -139,7 +138,7 @@ class EurotestHPP120256(Instrument):
         # hence the convenience of the get_process.
         validator=strict_range,
         values=CURRENT_RANGE,
-        get_process=lambda r:
+        get_process_list=lambda r:
         float(EurotestHPP120256.regex.search(r[2].strip()).groups()[0])
     )
 
@@ -151,7 +150,7 @@ class EurotestHPP120256(Instrument):
         # hence the convenience of the get_process.
         validator=strict_range,
         values=VOLTAGE_RAMP_RANGE,
-        get_process=lambda r:
+        get_process_list=lambda r:
         float(EurotestHPP120256.regex.search(r[2].strip()).groups()[0])
     )
 
@@ -161,7 +160,7 @@ class EurotestHPP120256(Instrument):
         # This property is a get so, the instrument will return a string like this:
         # "U, RANGE=3.000kV, VALUE=2.458kV", then voltage will return 2458.0,
         # hence the convenience of the get_process.
-        get_process=lambda r:
+        get_process_list=lambda r:
         float(EurotestHPP120256.regex.search(r[2].strip()).groups()[0])
     )
 
@@ -171,7 +170,7 @@ class EurotestHPP120256(Instrument):
         # This property is a get so, the instrument will return a string like this:
         # "U, RANGE=3.000kV, VALUE=2.458kV", then voltage_range will return 3000.0,
         # hence the convenience of the get_process.
-        get_process=lambda r:
+        get_process_list=lambda r:
         float(EurotestHPP120256.regex.search(r[1]).groups()[0])
     )
 
@@ -181,7 +180,7 @@ class EurotestHPP120256(Instrument):
         # This property is a get so, the instrument will return a string like this:
         # "I, RANGE=5000mA, VALUE=1739mA", then current will return a 1739.0,
         # hence the convenience of the get_process."""
-        get_process=lambda r:
+        get_process_list=lambda r:
         float(EurotestHPP120256.regex.search(r[2].strip()).groups()[0])
     )
 
@@ -191,7 +190,7 @@ class EurotestHPP120256(Instrument):
         # This property is a get so, the instrument will return a string like this:
         # "I, RANGE=5000mA, VALUE=1739mA, then current_range will return a 5000.0,
         # hence the convenience of the get_process.
-        get_process=lambda r:
+        get_process_list=lambda r:
         float(EurotestHPP120256.regex.search(r[1].strip()).groups()[0])
     )
 
@@ -203,7 +202,7 @@ class EurotestHPP120256(Instrument):
         validator=strict_discrete_set,
         values={True: 'ENable', False: 'DISable'},
         map_values=True,
-        get_process=lambda r:
+        get_process_list=lambda r:
         EurotestHPP120256.EurotestHPP120256Status(
             int(r[1].strip()[:-1].encode(EurotestHPP120256.response_encoding).
                 decode('utf-8', 'ignore'), 2)
@@ -218,7 +217,7 @@ class EurotestHPP120256(Instrument):
         validator=strict_discrete_set,
         values={True: 'ON', False: 'OFF'},
         map_values=True,
-        get_process=lambda r:
+        get_process_list=lambda r:
         EurotestHPP120256.EurotestHPP120256Status(
             int(r[1].strip()[:-1].encode(EurotestHPP120256.response_encoding).
                 decode('utf-8', 'ignore'), 2)
@@ -228,7 +227,7 @@ class EurotestHPP120256(Instrument):
     id = Instrument.measurement(
         "ID",
         """Get the identification of the instrument (string) """,
-        get_process=lambda r:
+        get_process_list=lambda r:
         r[1].strip().encode(EurotestHPP120256.response_encoding).decode('utf-8', 'ignore')
     )
 
@@ -254,7 +253,7 @@ class EurotestHPP120256(Instrument):
         # local  b2     remote              local
         # kilena b1     kill disable        kill enable
         # on     b0     off                 high voltage is ON
-        get_process=lambda r:
+        get_process_list=lambda r:
         EurotestHPP120256.EurotestHPP120256Status(
             int(r[1].strip()[:-1].encode(EurotestHPP120256.response_encoding).
                 decode('utf-8', 'ignore'), 2)
@@ -272,7 +271,7 @@ class EurotestHPP120256(Instrument):
         # LAM,TRIP ERROR Software current trip occurred
         # LAM,INPUT ERROR Wrong command received
         # LAM,OK Status OK
-        get_process=lambda r:
+        get_process_list=lambda r:
         r[1].strip().encode(EurotestHPP120256.response_encoding).decode('utf-8', 'ignore')
     )
 

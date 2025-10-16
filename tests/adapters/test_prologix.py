@@ -1,7 +1,7 @@
 #
 # This file is part of the PyMeasure package.
 #
-# Copyright (c) 2013-2023 PyMeasure Developers
+# Copyright (c) 2013-2025 PyMeasure Developers
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -55,6 +55,18 @@ def test_auto(message, value):
             init_comm + [("++auto", message)],
     ) as adapter:
         assert adapter.auto is value
+
+
+def test_gpib_read_timeout():
+    with expected_protocol(
+            PrologixAdapter,
+            init_comm + [
+                ("++read_tmo_ms 700", None),
+                ("++read_tmo_ms", 700)
+            ],
+    ) as adapter:
+        adapter.gpib_read_timeout = 700
+        assert adapter.gpib_read_timeout == 700
 
 
 def test_write():

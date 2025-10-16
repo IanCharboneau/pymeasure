@@ -1,7 +1,7 @@
 #
 # This file is part of the PyMeasure package.
 #
-# Copyright (c) 2013-2023 PyMeasure Developers
+# Copyright (c) 2013-2025 PyMeasure Developers
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -23,10 +23,15 @@
 #
 
 from enum import IntFlag
+import logging
 
 from pyvisa import VisaIOError
 from pymeasure.adapters import SerialAdapter, VISAAdapter
 from pymeasure.instruments import Instrument
+
+
+log = logging.getLogger(__name__)
+log.addHandler(logging.NullHandler())
 
 
 class VellemanK8090Switches(IntFlag):
@@ -109,6 +114,7 @@ class VellemanK8090(Instrument):
             write_termination="",
             read_termination="",
             timeout=timeout,
+            includeSCPI=False,
             **kwargs,
         )
 
@@ -121,7 +127,7 @@ class VellemanK8090(Instrument):
         Get firmware version, as (year - 2000, week). E.g. ``(10, 1)``
         """,
         cast=int,
-        get_process=lambda v: (v[2], v[3]) if len(v) > 3 and v[0] == 0x71 else None,
+        get_process_list=lambda v: (v[2], v[3]) if len(v) > 3 and v[0] == 0x71 else None,
     )
 
     status = Instrument.measurement(
@@ -137,13 +143,13 @@ class VellemanK8090(Instrument):
         * Timer state: the state of each relay timer
         """,
         cast=int,
-        get_process=_get_process_status,
+        get_process_list=_get_process_status,
     )
 
     switch_on = Instrument.setting(
         "0x11,%s",
-        """"
-        Switch on a set of channels. Other channels are unaffected.
+        """
+        Set channels to on state. Other channels are unaffected.
         Pass either a list or set of channel numbers (starting at 1), or pass a bitmask.
 
         After switching this waits for a reply from the device. This is only send when
@@ -158,7 +164,7 @@ class VellemanK8090(Instrument):
     switch_off = Instrument.setting(
         "0x12,%s",
         """
-        Switch off a set of channels. See :attr:`switch_on` for more details.
+        Set channels to off state. See :attr:`switch_on` for more details.
         """,
         set_process=_parse_channels,
         check_set_errors=True,
@@ -254,15 +260,24 @@ class VellemanK8090(Instrument):
 
         return ",".join(values_str)
 
-    def check_errors(self):
-        """Called after each set command, normally to look for errors.
+    def check_set_errors(self):
+        """Check for errors after having set a property and log them.
+
+        Called if :code:`check_set_errors=True` is set for that property.
 
         The K8090 replies with a status after a switch command, but
         **only** after any switch actually changed. In order to guarantee
         the buffer is empty, we attempt to read it fully here.
         No actual error checking is done here!
+
+        :return: List of error entries.
         """
         try:
             self.read()
         except (VisaIOError, ConnectionError):
             pass  # Ignore a timeout
+        except Exception as exc:
+            log.exception("Setting a property failed.", exc_info=exc)
+            raise
+        else:
+            return []

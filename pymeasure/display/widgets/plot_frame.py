@@ -1,7 +1,7 @@
 #
 # This file is part of the PyMeasure package.
 #
-# Copyright (c) 2013-2023 PyMeasure Developers
+# Copyright (c) 2013-2025 PyMeasure Developers
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -70,7 +70,7 @@ class PlotFrame(QtWidgets.QFrame):
 
         self.plot = self.plot_widget.getPlotItem()
 
-        style = dict(self.LABEL_STYLE | {'justify': 'right'})
+        style = dict(self.LABEL_STYLE, justify='right')
         if "font-size" in style:  # LabelItem wants the size as 'size' rather than 'font-size'
             style["size"] = style.pop("font-size")
         self.coordinates = pg.LabelItem("", parent=self.plot, **style)

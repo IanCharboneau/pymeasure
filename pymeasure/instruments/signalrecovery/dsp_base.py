@@ -1,7 +1,7 @@
 #
 # This file is part of the PyMeasure package.
 #
-# Copyright (c) 2013-2023 PyMeasure Developers
+# Copyright (c) 2013-2025 PyMeasure Developers
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -290,7 +290,6 @@ class DSPBase(Instrument):
 
         # Check and map the value
         value = strict_discrete_set(value, sensitivities)
-        print(value)
         value = sensitivities.index(value)
 
         # Set sensitivity
@@ -414,7 +413,7 @@ class DSPBase(Instrument):
         """Control the time interval between the collection of successive
         points in the curve buffer.
 
-        Valid values to the the time interval are integers in ms with a
+        Valid values to the time interval are integers in ms with a
         resolution of 5 ms; input values are rounded up to a multiple of 5.
         Valid values are values between 0 and 1,000,000,000 (corresponding to
         12 days). The interval may be set to 0, which sets the rate of data

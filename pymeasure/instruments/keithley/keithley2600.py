@@ -1,6 +1,7 @@
+#
 # This file is part of the PyMeasure package.
 #
-# Copyright (c) 2013-2023 PyMeasure Developers
+# Copyright (c) 2013-2025 PyMeasure Developers
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -23,8 +24,10 @@
 
 import logging
 import time
+from warnings import warn
+
 import numpy as np
-from pymeasure.instruments import Instrument
+from pymeasure.instruments import Instrument, SCPIUnknownMixin
 from pymeasure.instruments.validators import truncated_range, strict_discrete_set
 
 # Setup logging
@@ -32,7 +35,7 @@ log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
 
 
-class Keithley2600(Instrument):
+class Keithley2600(SCPIUnknownMixin, Instrument):
     """Represents the Keithley 2600 series (channel A and B) SourceMeter"""
 
     def __init__(self, adapter, name="Keithley 2600 SourceMeter", **kwargs):
@@ -45,8 +48,8 @@ class Keithley2600(Instrument):
         self.ChB = Channel(self, 'b')
 
     @property
-    def error(self):
-        """ Returns a tuple of an error code and message from a
+    def next_error(self):
+        """ Get a tuple of an error code and message from a
         single error. """
         err = self.ask('print(errorqueue.next())')
         err = err.split('\t')
@@ -62,16 +65,15 @@ class Keithley2600(Instrument):
         log.info(f"ERROR {str(code)},{str(message)} - len {str(len(err))}")
         return (code, message)
 
-    def check_errors(self):
-        """ Logs any system errors reported by the instrument.
+    @property
+    def error(self):
+        """Get the next error from the queue.
+
+        .. deprecated:: 0.15
+            Use `next_error` instead.
         """
-        code, message = self.error
-        while code != 0:
-            t = time.time()
-            log.info("Keithley 2600 reported error: %d, %s" % (code, message))
-            code, message = self.error
-            if (time.time() - t) > 10:
-                log.warning("Timed out for Keithley 2600 error retrieval.")
+        warn("Deprecated to use `error`, use `next_error` instead.", FutureWarning)
+        return self.next_error
 
 
 class Channel:
@@ -101,7 +103,7 @@ class Channel:
 
     source_output = Instrument.control(
         'source.output', 'source.output=%d',
-        """Property controlling the channel output state (ON of OFF)
+        """Control the channel output state (ON of OFF)
         """,
         validator=strict_discrete_set,
         values={'OFF': 0, 'ON': 1},
@@ -110,7 +112,7 @@ class Channel:
 
     source_mode = Instrument.control(
         'source.func', 'source.func=%d',
-        """Property controlling the channel soource function (Voltage or Current)
+        """Control the channel source function (Voltage or Current)
         """,
         validator=strict_discrete_set,
         values={'voltage': 1, 'current': 0},
@@ -119,7 +121,7 @@ class Channel:
 
     measure_nplc = Instrument.control(
         'measure.nplc', 'measure.nplc=%f',
-        """ Property controlling the nplc value """,
+        """ Control the nplc value """,
         validator=truncated_range,
         values=[0.001, 25],
         map_values=True
@@ -130,33 +132,33 @@ class Channel:
     ###############
     current = Instrument.measurement(
         'measure.i()',
-        """ Reads the current in Amps """
+        """ Get the current in Amps """
     )
 
     source_current = Instrument.control(
         'source.leveli', 'source.leveli=%f',
-        """ Property controlling the applied source current """,
+        """ Control the applied source current """,
         validator=truncated_range,
         values=[-1.5, 1.5]
     )
 
     compliance_current = Instrument.control(
         'source.limiti', 'source.limiti=%f',
-        """ Property controlling the source compliance current """,
+        """ Control the source compliance current """,
         validator=truncated_range,
         values=[-1.5, 1.5]
     )
 
     source_current_range = Instrument.control(
         'source.rangei', 'source.rangei=%f',
-        """Property controlling the source current range """,
+        """Control the source current range """,
         validator=truncated_range,
         values=[-1.5, 1.5]
     )
 
     current_range = Instrument.control(
         'measure.rangei', 'measure.rangei=%f',
-        """Property controlling the measurement current range """,
+        """Control the measurement current range """,
         validator=truncated_range,
         values=[-1.5, 1.5]
     )
@@ -166,33 +168,33 @@ class Channel:
     ###############
     voltage = Instrument.measurement(
         'measure.v()',
-        """ Reads the voltage in Volts """
+        """ Get the voltage in Volts """
     )
 
     source_voltage = Instrument.control(
         'source.levelv', 'source.levelv=%f',
-        """ Property controlling the applied source voltage """,
+        """ Control the applied source voltage """,
         validator=truncated_range,
         values=[-200, 200]
     )
 
     compliance_voltage = Instrument.control(
         'source.limitv', 'source.limitv=%f',
-        """ Property controlling the source compliance voltage """,
+        """ Control the source compliance voltage """,
         validator=truncated_range,
         values=[-200, 200]
     )
 
     source_voltage_range = Instrument.control(
         'source.rangev', 'source.rangev=%f',
-        """Property controlling the source current range """,
+        """Control the source current range """,
         validator=truncated_range,
         values=[-200, 200]
     )
 
     voltage_range = Instrument.control(
         'measure.rangev', 'measure.rangev=%f',
-        """Property controlling the measurement voltage range """,
+        """Control the measurement voltage range """,
         validator=truncated_range,
         values=[-200, 200]
     )
@@ -202,12 +204,12 @@ class Channel:
     ####################
     resistance = Instrument.measurement(
         'measure.r()',
-        """ Reads the resistance in Ohms """
+        """ Get the resistance in Ohms """
     )
 
     wires_mode = Instrument.control(
         'sense', 'sense=%d',
-        """Property controlling the resistance measurement mode: 4 wires or 2 wires""",
+        """Control the resistance measurement mode: 4 wires or 2 wires""",
         validator=strict_discrete_set,
         values={'4': 1, '2': 0},
         map_values=True

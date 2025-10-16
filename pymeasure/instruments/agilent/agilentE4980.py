@@ -1,7 +1,7 @@
 #
 # This file is part of the PyMeasure package.
 #
-# Copyright (c) 2013-2023 PyMeasure Developers
+# Copyright (c) 2013-2025 PyMeasure Developers
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -23,12 +23,12 @@
 #
 
 
-from pymeasure.instruments import Instrument
+from pymeasure.instruments import Instrument, SCPIUnknownMixin
 from pymeasure.instruments.validators import strict_discrete_set, strict_range
 from pyvisa.errors import VisaIOError
 
 
-class AgilentE4980(Instrument):
+class AgilentE4980(SCPIUnknownMixin, Instrument):
     """Represents LCR meter E4980A/AL"""
 
     ac_voltage = Instrument.control(":VOLT:LEV?", ":VOLT:LEV %g",
@@ -50,7 +50,7 @@ class AgilentE4980(Instrument):
     impedance = Instrument.measurement(
         ":FETCH?",
         "Measured data A and B, according to :attr:`~.AgilentE4980.mode`",
-        get_process=lambda x: x[:2])
+        get_process_list=lambda x: x[:2])
 
     mode = Instrument.control("FUNCtion:IMPedance:TYPE?", "FUNCtion:IMPedance:TYPE %s",
                               """
@@ -61,20 +61,20 @@ Select quantities to be measured:
     * CPG: Parallel capacitance [F] and parallel conductance [S]
     * CPRP: Parallel capacitance [F] and parallel resistance [Ohm]
 
-    * CSD: Series capacitance [F] and dissipation factor [number]
-    * CSQ: Series capacitance [F] and quality factor [number]
-    * CSRS: Series capacitance [F] and series resistance [Ohm]
+    - CSD: Series capacitance [F] and dissipation factor [number]
+    - CSQ: Series capacitance [F] and quality factor [number]
+    - CSRS: Series capacitance [F] and series resistance [Ohm]
 
-   * LPD: Parallel inductance [H] and dissipation factor [number]
-   * LPQ: Parallel inductance [H] and quality factor [number]
-   * LPG: Parallel inductance [H] and parallel conductance [S]
-   * LPRP: Parallel inductance [H] and parallel resistance [Ohm]
+    * LPD: Parallel inductance [H] and dissipation factor [number]
+    * LPQ: Parallel inductance [H] and quality factor [number]
+    * LPG: Parallel inductance [H] and parallel conductance [S]
+    * LPRP: Parallel inductance [H] and parallel resistance [Ohm]
 
-    * LSD: Series inductance [H] and dissipation factor [number]
-    * LSQ: Seriesinductance [H] and quality factor [number]
-    * LSRS: Series inductance [H] and series resistance [Ohm]
+    - LSD: Series inductance [H] and dissipation factor [number]
+    - LSQ: Seriesinductance [H] and quality factor [number]
+    - LSRS: Series inductance [H] and series resistance [Ohm]
 
-    * RX: Resitance [Ohm] and reactance [Ohm]
+    * RX: Resistance [Ohm] and reactance [Ohm]
     * ZTD: Impedance, magnitude [Ohm] and phase [deg]
     * ZTR: Impedance, magnitude [Ohm] and phase [rad]
     * GB: Conductance [S] and susceptance [S]
