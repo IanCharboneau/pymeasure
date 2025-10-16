@@ -53,7 +53,10 @@ class M7006_001(Instrument):
         super().write(f"{self._slot}{self._device}{command}")
 
     def values(self, command, **kwargs):
-        return super().values(f"{self._slot}{self._device}{command}", **kwargs)
+        return super().values(f"{command}", **kwargs)
+    
+    
+
 
     def check_errors(self):
         """Checks for errors and returns the error message."""
@@ -125,6 +128,7 @@ class M7006_001(Instrument):
         """Current position of the device. Settable and gettable.
         does not move the device.
         """,
+        
     )
 
     direction = Instrument.measurement(
