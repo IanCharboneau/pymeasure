@@ -47,12 +47,14 @@ ureg = UnitRegistry()
 class TraceChannel(Channel):
     """A channel for adressing traces on the AgilentE4440A."""
 
-
     trace_mode = Instrument.setting(
-        "Trac{ch}:MODE %s;",
+    # trace_mode = Instrument.control(
+        ":Trac{ch}:MODE %s;",
+        # ":Trac{ch}:MODE?;",
         """Sets the provided trace number to the specified mode""",
         validator=strict_discrete_set,
-        values=["WRIT", "MAXH", "MINH", "VIEW", "BLAN"],
+        values=["WRIT", "MAXH", "MINH", "VIEW", "BLAN",
+            "VID", "POW"],
         # values=[0, 1, 2, 3, 4],
         # set_process=lambda v:["WRIT", "MAXH", "MINH", "VIEW", "BLAN"][v],
     )   
@@ -65,6 +67,9 @@ class TraceChannel(Channel):
         
     def max_hold(self):
         """Sets the provided trace number to max hold mode"""
+
+        self.trace_mode = "WRIT"
+        sleep(0.02)  
         self.trace_mode = "MAXH"
     
     def min_hold(self):
@@ -78,11 +83,19 @@ class TraceChannel(Channel):
     def blank(self):
         """Sets the provided trace number to blank mode"""
         self.trace_mode = "BLAN" 
+    
+    def vidAVG(self):
+        """Sets the provided trace number to blank mode"""
+        self.trace_mode = "VID" 
+    
+    def powAVG(self):
+        """Sets the provided trace number to blank mode"""
+        self.trace_mode = "POW" 
 
     
 
-class AgilentE4440A(SCPIMixin, Instrument):
-    """Represents the AgilentE4440A Spectrum Analyzer
+class RigolDSA815(SCPIMixin, Instrument):
+    """Represents the Rigol DSA815 Spectrum Analyzer
     and provides a high-level interface for taking scans of
     high-frequency spectrums
     """ 
@@ -90,7 +103,7 @@ class AgilentE4440A(SCPIMixin, Instrument):
 
     num_format_local = None
 
-    def __init__(self,adapter, name="Agilent E4440A Spectrum Analyzer",
+    def __init__(self,adapter, name="Rigol DSA815 Spectrum Analyzer",
                  read_termination="\n",
                  write_termination="\n",
                  timeout=5000,
@@ -119,7 +132,7 @@ class AgilentE4440A(SCPIMixin, Instrument):
         in Hz. This property can be set.
         """,
         validator=pint_validator,
-        values=[9000, 26500000000],       
+        values=[9000, 1600000000],       
     )
     
     stop_frequency = Instrument.control(
@@ -129,7 +142,7 @@ class AgilentE4440A(SCPIMixin, Instrument):
         in Hz. This property can be set.
         """,
         validator=pint_validator,
-        values=[9000, 26500000000],
+        values=[9000, 1600000000],
         # get_process=lambda x: np.float32(re.search("[0-9]+\.[0-9]+", x).group())
         # * np.power(10, int(re.search("\+([0-9]{3}])", x).group())),
     )
@@ -250,6 +263,7 @@ class AgilentE4440A(SCPIMixin, Instrument):
         in Hz. This property can be set.
         """,
     )
+
     video_bandwidth = Instrument.control(
         ":SENS:BAND:VID?;",
         ":SENS:BAND:VID %g;",
@@ -257,9 +271,10 @@ class AgilentE4440A(SCPIMixin, Instrument):
         in Hz. This property can be set.
         """,
     )
+
     ref_level = Instrument.control(
-        "DiSP:WIND:TRAC:Y:RLEV?;",
-        "DiSP:WIND:TRAC:Y:RLEV %g;",
+        ":DiSP:WIN:TRAC:Y:SCAL:RLEV?;",
+        ":DiSP:WIN:TRAC:Y:SCAL:RLEV %g;",
         """ A floating point property that represents the reference level of the
         display in current units. This property can be set.""",
         cast=float,
@@ -864,30 +879,46 @@ class AgilentE4440A(SCPIMixin, Instrument):
         """Returns a numpy array of the data for a particular trace
         based on the trace number (1, 2, or 3).
         """
+        if self.num_format_local != "ASCII":
+            self.num_format_local = "ASCII"
+            self.write(":FORMat:TRACe:DATA ASCII;")
+
+        sleep(0.1)
+        data = np.loadtxt(
+            StringIO(re.sub("#\\d*  ", "", self.ask(":TRACE:DATA? TRACE%d " % number))),
+            delimiter=",",
+            dtype=np.float64,
+        )
+        return data
+    
+    # def bin_trace(self, number=1):
+    #     """Returns a numpy array of the data for a particular trace
+    #     based on the trace number (1, 2, or 3).
+    #     """
         
-        if self.num_format_local != "REAL,64":
-            self.num_format = "REAL,64" 
-            self.num_format_local = "REAL,64"
-            self.write(":FORM:BORD SWAP;") 
+    #     if self.num_format_local != "REAL,64":
+    #         self.num_format = "REAL,64" 
+    #         self.num_format_local = "REAL,64"
+    #         self.write(":FORM:BORD SWAP;") 
         
-        self.write(f":TRAC? TRACE{number};")
+    #     self.write(f":TRAC? TRACE{number};")
        
-        # print("getting binary data")
-        # print(self.read_bytes(1))
-        self.read_bytes(1)
-        # read the number of characters in the header
-        D = int(self.read_bytes(1))
-        # print(D)
-        # read the header
-        header = int(self.read_bytes(D))
-        # print(header)
-        # read the binary data
-        data = self.read_bytes(header)
-        self.read_bytes(1)  # read the termination character
-        # print(self.read_bytes(1))
-        # convert the binary data to a numpy array
-        trace = np.frombuffer(data, dtype=np.float64)
-        return trace
+    #     # print("getting binary data")
+    #     # print(self.read_bytes(1))
+    #     self.read_bytes(1)
+    #     # read the number of characters in the header
+    #     D = int(self.read_bytes(1))
+    #     # print(D)
+    #     # read the header
+    #     header = int(self.read_bytes(D))
+    #     # print(header)
+    #     # read the binary data
+    #     data = self.read_bytes(header)
+    #     self.read_bytes(1)  # read the termination character
+    #     # print(self.read_bytes(1))
+    #     # convert the binary data to a numpy array
+    #     trace = np.frombuffer(data, dtype=np.float64)
+    #     return trace
             
         
 

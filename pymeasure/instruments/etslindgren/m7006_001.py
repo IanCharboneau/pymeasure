@@ -49,16 +49,15 @@ class M7006_001(Instrument):
         self._slot = slot
         self._device = device
 
-    def write(self, command):
-        super().write(f"{self._slot}{self._device}{command}")
+    def write(self, command, **kwargs):
+        super().write(f"{self._slot}{self._device}{command}", **kwargs)
 
-    def values(self, command, **kwargs):
-        return super().values(f"{command}", **kwargs)
     
     
+    
 
 
-    def check_errors(self):
+    def check_errors(self): 
         """Checks for errors and returns the error message."""
         return self.read()
 
