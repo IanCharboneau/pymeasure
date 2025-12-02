@@ -60,7 +60,7 @@ class AgilentE4407B(Instrument):
         """ A floating point property that represents the start frequency
         in Hz. This property can be set.
         """,
-        validator=pint_validator,
+        validator=strict_discrete_range,
         values=[9000, 26500000000],       
     )
     
@@ -70,7 +70,7 @@ class AgilentE4407B(Instrument):
         """ A floating point property that represents the stop frequency
         in Hz. This property can be set.
         """,
-        validator=pint_validator,
+        validator=strict_discrete_range,
         values=[9000, 26500000000],
         # get_process=lambda x: np.float32(re.search("[0-9]+\.[0-9]+", x).group())
         # * np.power(10, int(re.search("\+([0-9]{3}])", x).group())),
@@ -100,12 +100,24 @@ class AgilentE4407B(Instrument):
         """ A floating point property that represents the span
         in Hz. This property can be set.
         """,
+        validator=pint_validator,
+        values=[0, 26500000000],
     )
+    def ref_lvl(self,ref = 106.99):
+        """A Command that sets the ref level"""
+        self.write(f"DISP:WIND:TRAC:Y:RLEV {ref}")
 
     def marker_peak (self,trace = 1):
         """ A command that sets the marker to the peak value.""",
         self.write(f":CALC:MARK{trace}:MAX"),
-            
+
+    def maxhold (self, trace =1):
+        """A command that set the trace to max hold"""
+        self.write(f"TRAC{trace}:MODE MAXH") 
+
+    def clearwrite (self, trace =1):
+        """A command that set the trce to clearwrite"""    
+        self.write(f"TRAC{trace}:MODE WRIT")
 
     def full_span(self):
         """Sets the span to the full span of the instrument."""
@@ -182,42 +194,46 @@ class AgilentE4407B(Instrument):
 
     # Sensor commands
     # dectector commands
-    resolution_bandwidth = Instrument.control(
+    rbw = Instrument.control(
         ":SENS:BAND:RES?;",
         ":SENS:BAND:RES %g;",
         """ A floating point property that represents the resolution bandwidth
         in Hz. This property can be set.
         """,
+        validator=pint_validator,
+        values=[1, 10000000],
     )
-    video_bandwidth = Instrument.control(
+    vbw = Instrument.control(
         ":SENS:BAND:VID?;",
         ":SENS:BAND:VID %g;",
         """ A floating point property that represents the video bandwidth
         in Hz. This property can be set.
         """,
+        validator=pint_validator,
+        values=[1, 10000000],
     )
-    resolution_bandwidth_auto = Instrument.control(
+    rbw_auto = Instrument.control(
         ":SENS:BAND:RES:AUTO?;",
         ":SENS:BAND:RES:AUTO %g;",
         """ A boolean property that represents the resolution bandwidth
         auto mode. This property can be set.
         """,
     )
-    video_bandwidth_auto = Instrument.control(
+    vbw_auto = Instrument.control(
         ":SENS:BAND:VID:AUTO?;",
         ":SENS:BAND:VID:AUTO %g;",
         """ A boolean property that represents the video bandwidth
         auto mode. This property can be set.
         """,
     )
-    video_resolution_bandwidth_ratio = Instrument.control(
+    vbw_ratio = Instrument.control(
         ":SENS:BAND:VID:RAT?;",
         ":SENS:BAND:VID:RAT %g;",
         """ A floating point property that represents the video to resolution
         bandwidth ratio. This property can be set.
         """,
     )
-    video_resolution_bandwidth_ratio_auto = Instrument.control(
+    vbw_ratio_auto = Instrument.control(
         ":SENS:BAND:VID:RAT:AUTO?;",
         ":SENS:BAND:VID:RAT:AUTO %g;",
         """ A boolean property that represents the video to resolution
@@ -632,10 +648,12 @@ class AgilentE4407B(Instrument):
         
         pic = "C:\\TEMP.GIF" # path must be less than a certain amount of characters
         self.full_screen = 1
+        sleep(0.2)
         self.save_screen = pic
         data = self.recive_file (pic)
         self.delet_file = pic
         self.full_screen = 0
+        sleep(0.2)
         return data
 
     # Format commands
@@ -787,7 +805,7 @@ class AgilentE4407B(Instrument):
 
         sleep(0.1)
         data = np.loadtxt(
-            StringIO(re.sub("#\\d*  ", "", self.ask(":TRACE:DATA? TRACE%d " % number))),
+            StringIO(re.sub("#\\d* ", "", self.ask(":TRACE:DATA? TRACE%d " % number))),
             delimiter=",",
             dtype=np.float64,
         )

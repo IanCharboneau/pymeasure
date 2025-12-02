@@ -38,7 +38,7 @@ def pint_validator(value, values):
     :param values: A range of values (range, list, etc.)
     :raises: ValueError if the value is out of the range
     """
-    if re.search(r"Hz", str(value)):
+    if re.search(r"Hz", str(value)) or re.search(r"hertz", str(value)):
         value = value.to("Hz").magnitude
         if min(values) <= value <= max(values):
             return value

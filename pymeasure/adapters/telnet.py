@@ -22,7 +22,7 @@
 # THE SOFTWARE.
 #
 
-import telnetlib
+# import telnetlib
 import time
 from warnings import warn
 
