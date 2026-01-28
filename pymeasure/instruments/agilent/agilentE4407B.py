@@ -787,7 +787,7 @@ class AgilentE4407B(Instrument):
 
         sleep(0.1)
         data = np.loadtxt(
-            StringIO(re.sub("#\\d*  ", "", self.ask(":TRACE:DATA? TRACE%d " % number))),
+            StringIO(re.sub("#\\d* ", "", self.ask(":TRACE:DATA? TRACE%d " % number))),
             delimiter=",",
             dtype=np.float64,
         )

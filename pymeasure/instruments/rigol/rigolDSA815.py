@@ -174,8 +174,10 @@ class RigolDSA815(SCPIMixin, Instrument):
     )
 
     def marker_peak (self,trace = 1):
+        
         """ A command that sets the marker to the peak value.""",
-        self.write(f":CALC:MARK{trace}:MAX"),
+
+        self.write(f":CALC:MARK{trace}:MAX:MAX"),
             
 
     def full_span(self):
@@ -344,6 +346,16 @@ class RigolDSA815(SCPIMixin, Instrument):
         """,
         validator=strict_discrete_set,
         values=["NEG", "POS", "SAMPL", "AVER", "RMS"],
+    )
+
+    detector_filter = Instrument.control(
+        ":BAND:EMIF:STATE?;",
+        ":BAND:EMIF:STATE %g;",
+        """ A string property that represents the detector filter state.
+        This property can be set.
+        """,
+        validator=strict_discrete_set,
+        values=["ON", "OFF", 0, 1],
     )
     average_type = Instrument.control(
         ":SENS:AVER:TYPE?;",
@@ -869,7 +881,7 @@ class RigolDSA815(SCPIMixin, Instrument):
 
         sleep(0.1)
         data = np.loadtxt(
-            StringIO(re.sub("#\\d*  ", "", self.ask(":TRACE:DATA? TRACE%d " % number))),
+            StringIO(re.sub("#\\d* ", "", self.ask(":TRACE:DATA? TRACE%d " % number))),
             delimiter=",",
             dtype=np.float64,
         )
