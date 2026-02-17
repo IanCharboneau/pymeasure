@@ -36,6 +36,7 @@ from pymeasure.instruments.channel import Channel
 
 from io import StringIO
 import numpy as np
+import binascii
 import pandas as pd
 import re
 import pint
@@ -932,7 +933,47 @@ class RigolDSA815(SCPIMixin, Instrument):
     #     trace = np.frombuffer(data, dtype=np.float64)
     #     return trace
             
+    def screen(self, filename='rigol.bmp'):
         
+        self.write(":INIT:CONT 0;")
+
+        self.write(':PRIV:snap? BMP;')
+
+        header = self.adapter.connection.read_bytes(11).decode()
+        print(header)
+        size = int(header[2:11]) #skip #9
+        print(size)
+        # size = 100000
+        bytes_read = 0
+
+
+
+        with open(filename, 'wb') as f:
+            while bytes_read < size:
+                chunk = self.adapter.connection.read_bytes(min(1024, size - bytes_read))
+                f.write(chunk)
+                bytes_read += len(chunk)
+
+            f.truncate(size)  # Ensure the file is exactly the size of the data
+        
+        self.write(":INIT:CONT 1;")
+
+    def screenPNG(self, filename='rigol.png'):
+        self.write(":INIT:CONT 0;")
+      
+        with open(filename, "wb") as f:
+            image_data = self.adapter.connection.query_binary_values(
+                ':PRIV:snap? PNG;',
+                datatype='B',
+                container=bytes,
+                chunk_size=2048,
+            )
+
+            f.write(image_data)
+        
+        self.write(":INIT:CONT 1;")
+
+
 
     def trace_df(self, number=1):
         """Returns a pandas DataFrame containing the frequency
