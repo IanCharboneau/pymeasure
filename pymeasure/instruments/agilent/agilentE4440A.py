@@ -323,12 +323,12 @@ class AgilentE4440A(SCPIMixin, Instrument):
     )
     detector_type = Instrument.control(
         ":SENS:DET:?;",
-        ":SENS:DET %g;",
+        ":SENS:DET %s;",
         """ A string property that represents the detector type.
         This property can be set.
         """,
         validator=strict_discrete_set,
-        values=["NEG", "POS", "SAMPL", "AVER", "RMS"],
+        values=["NEG", "POS", "SAMPL", "AVER", "RMS", "QPE", "EAV", "EPOS", "MPOS"],
     )
     average_type = Instrument.control(
         ":SENS:AVER:TYPE?;",
@@ -698,9 +698,11 @@ class AgilentE4440A(SCPIMixin, Instrument):
         
         pic = "C:\\TEMP.GIF" # path must be less than a certain amount of characters
         self.full_screen = 1
+        # sleep(3)
         self.save_screen = pic
         data = self.recive_file (pic)
         self.delet_file = pic
+        
         self.full_screen = 0
         return data
 
