@@ -30,7 +30,7 @@ from pymeasure.instruments.validators import (
     strict_discrete_set,
     truncated_discrete_set,
     truncated_range,
-    pint_validator
+    strict_range,
 )
 from pymeasure.instruments.channel import Channel
 
@@ -39,6 +39,7 @@ import numpy as np
 import binascii
 import pandas as pd
 import re
+import png
 import pint
 from pint import UnitRegistry
 ureg = UnitRegistry()
@@ -132,8 +133,8 @@ class RigolDSA815(SCPIMixin, Instrument):
         """ A floating point property that represents the start frequency
         in Hz. This property can be set.
         """,
-        validator=pint_validator,
-        values=[9000, 1600000000],       
+        validator=strict_range,
+        values=[9000, 15*1e9],       
     )
     
     stop_frequency = Instrument.control(
@@ -142,8 +143,8 @@ class RigolDSA815(SCPIMixin, Instrument):
         """ A floating point property that represents the stop frequency
         in Hz. This property can be set.
         """,
-        validator=pint_validator,
-        values=[9000, 1600000000],
+        validator=strict_range,
+        values=[9000, 15*1e9],
         # get_process=lambda x: np.float32(re.search("[0-9]+\.[0-9]+", x).group())
         # * np.power(10, int(re.search("\+([0-9]{3}])", x).group())),
     )
@@ -161,8 +162,8 @@ class RigolDSA815(SCPIMixin, Instrument):
         """ A floating point property that represents the center frequency
         in Hz. This property can be set.
         """,
-        validator=pint_validator,
-        values=[9000, 26500000000],
+        validator=strict_range,
+        values=[9000, 15*1e9],
         # cast=int,
     )
 
@@ -191,8 +192,49 @@ class RigolDSA815(SCPIMixin, Instrument):
         """
         self.write(":SENS:FREQ:SPAN:PREV")
 
+    TG_State = Instrument.control(
+        ":OUTPut:STATe?;",
+        ":OUTPut:STATe %s;",
+        """Tracking generator state. ON or OFF.""",
+        validator=strict_discrete_set,
+        values=["ON", "OFF", 0, 1],
+    )
 
-    
+    TG_Power = Instrument.control(
+
+        ":SOUR:POW:LEV:IMM ?",
+        ":SOUR:POW:LEV:IMM %g",
+        """Tracking generator power level.""",
+        validator=truncated_discrete_set,
+        values=[-20,0],
+    )
+
+    TG_Lvl_Offset = Instrument.control(
+
+        ":SOUR:CORR:OFF ?",
+        ":SOUR:CORR:OFF %g",
+        """Tracking generator level offset.""",
+        validator=truncated_discrete_set,
+        values=[-200,200],
+    )
+
+    TG_Norm_State = Instrument.control(
+        ":CALC:NTD?",
+        ":CALC:NTD %s",
+        """Tracking generator normalization state. ON or OFF.""",
+        validator=strict_discrete_set,
+        values=["ON", "OFF", 0, 1],
+    )
+
+    TG_Norm_Ref_Lvl = Instrument.control(
+        
+        ":DISP:WIN:TRAC:Y:SCAL:NRL ?;",
+        ":DISP:WIN:TRAC:Y:SCAL:NRL %g;",
+        """Tracking generator normalization reference level.""",
+        validator=strict_range,
+        values=[-200,200],
+    )
+
 
     # sweep commands
     frequency_points = Instrument.control(
@@ -351,7 +393,7 @@ class RigolDSA815(SCPIMixin, Instrument):
 
     detector_filter = Instrument.control(
         ":BAND:EMIF:STATE?;",
-        ":BAND:EMIF:STATE %g;",
+        ":BAND:EMIF:STATE %s;",
         """ A string property that represents the detector filter state.
         This property can be set.
         """,
@@ -960,18 +1002,22 @@ class RigolDSA815(SCPIMixin, Instrument):
 
     def screenPNG(self, filename='rigol.png'):
         self.write(":INIT:CONT 0;")
-      
-        with open(filename, "wb") as f:
+        sleep(0.5)
+        try:
             image_data = self.adapter.connection.query_binary_values(
                 ':PRIV:snap? PNG;',
                 datatype='B',
                 container=bytes,
                 chunk_size=2048,
             )
-
-            f.write(image_data)
-        
-        self.write(":INIT:CONT 1;")
+            self.adapter.flush_read_buffer()
+            with open(filename, 'wb') as f:
+                f.write(image_data)
+            # return image_data
+        finally:
+            sleep(0.5)
+            self.write(":INIT:CONT 1;")
+            sleep(0.5)
 
 
 

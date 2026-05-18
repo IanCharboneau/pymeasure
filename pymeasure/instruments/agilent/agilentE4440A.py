@@ -678,7 +678,7 @@ class AgilentE4440A(SCPIMixin, Instrument):
     )
    
     full_screen = Instrument.setting(
-        ":DISP:FSCR %g ;",
+        ":DISP:FSCR %s;",
         """ Turn full screen OFF or ON""",
         validator=strict_discrete_set,
         values=["ON", "OFF", 0, 1],
@@ -703,7 +703,7 @@ class AgilentE4440A(SCPIMixin, Instrument):
         data = self.recive_file (pic)
         self.delet_file = pic
         
-        self.full_screen = 0
+        # self.full_screen = 0
         return data
 
     # Format commands
