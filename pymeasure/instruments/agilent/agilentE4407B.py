@@ -27,6 +27,7 @@ from time import sleep
 from pymeasure.instruments import Instrument
 from pymeasure.instruments.validators import (
     strict_discrete_range,
+    strict_range,
     strict_discrete_set,
     truncated_discrete_set,
     truncated_range,
@@ -101,6 +102,18 @@ class AgilentE4407B(Instrument):
         in Hz. This property can be set.
         """,
     )
+
+    rf_level = Instrument.control(
+        "DISP:WIND:TRAC:Y:SCAL:RLEV?;",
+        "DISP:WIND:TRAC:Y:SCAL:RLEV %g;",
+        """ A floating point property that represents the RF level
+        in dBm. This property can be set.
+        """,
+        validator=strict_range,
+        values=[-42.91, 162],
+
+    )
+  
 
     def marker_peak (self,trace = 1):
         """ A command that sets the marker to the peak value.""",
@@ -242,7 +255,7 @@ class AgilentE4407B(Instrument):
     )
     detector_type = Instrument.control(
         ":SENS:DET:?;",
-        ":SENS:DET %g;",
+        ":SENS:DET %s;",
         """ A string property that represents the detector type.
         This property can be set.
         """,
@@ -261,7 +274,7 @@ class AgilentE4407B(Instrument):
 
     emi_detector_type = Instrument.control(
         ":SENS:DET:EMI?;",
-        ":SENS:DET:EMI %g;",
+        ":SENS:DET:EMI %s;",
         """ A string property that represents the detector type.
         This property can be set.
         """,
@@ -669,7 +682,7 @@ class AgilentE4407B(Instrument):
     # unit commands
     measure_units = Instrument.control(
         ":UNIT:POW?;",
-        ":UNIT:POW %g;",
+        ":UNIT:POW %s;",
         """ A property that controls the units Y Axis Unit of the Instrument.
         The available units are DBM, DBMV, DBUV, V, W, DVUA, A.""",
         validator=strict_discrete_set,

@@ -1,15 +1,17 @@
 from pymeasure.instruments import Instrument
-from pymeasure.instruments.validators import strict_discrete, strict_range
+from pymeasure.instruments.validators import strict_range
 
-class HA1600A(Instrument):
+class Ha1600A(Instrument):
     """
     Represents the Aim-TTi HA1600A Power and Harmonics Analyzer.
     """
     
-    def __init__(self, adapter, **kwargs):
+    def __init__(self, adapter, name="Aim-TTi HA1600A Power Analyzer", **kwargs):
         super().__init__(
             adapter,
-            "Aim-TTi HA1600A Power Analyzer",
+            # read_termination="\r\n",
+            # write_termination="\r\n",
+            name=name,
             **kwargs
         )
 
