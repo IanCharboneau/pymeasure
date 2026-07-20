@@ -27,6 +27,7 @@ from time import sleep
 from pymeasure.instruments import Instrument
 from pymeasure.instruments.validators import (
     strict_discrete_range,
+    strict_range,
     strict_discrete_set,
     truncated_discrete_set,
     truncated_range,
@@ -63,7 +64,7 @@ class AgilentE4407B(Instrument):
         validator=pint_validator,
         values=[9000, 26500000000],       
     )
-    
+    # start_freq = start_frequency()
     stop_frequency = Instrument.control(
         ":SENS:FREQ:STOP?",
         ":SENS:FREQ:STOP %g",
@@ -75,7 +76,7 @@ class AgilentE4407B(Instrument):
         # get_process=lambda x: np.float32(re.search("[0-9]+\.[0-9]+", x).group())
         # * np.power(10, int(re.search("\+([0-9]{3}])", x).group())),
     )
-
+    # stop_freq = stop_frequency()
     frequency_step = Instrument.control(
         ":SENS:FREQ:CENT:STEP:INCR?",
         ":SENS:FREQ:CENT:STEP:INCR %g",
@@ -93,7 +94,7 @@ class AgilentE4407B(Instrument):
         values=[9000, 26500000000],
         # cast=int,
     )
-
+    # center_freq = center_frequency()
     span = Instrument.control(
         ":SENS:FREQ:SPAN?;",
         ":SENS:FREQ:SPAN %g;",
@@ -102,10 +103,29 @@ class AgilentE4407B(Instrument):
         """,
     )
 
+    rf_level = Instrument.control(
+        "DISP:WIND:TRAC:Y:SCAL:RLEV?;",
+        "DISP:WIND:TRAC:Y:SCAL:RLEV %g;",
+        """ A floating point property that represents the RF level
+        in dBm. This property can be set.
+        """,
+        validator=strict_range,
+        values=[-42.91, 162],
+
+    )
+  
+
     def marker_peak (self,trace = 1):
         """ A command that sets the marker to the peak value.""",
         self.write(f":CALC:MARK{trace}:MAX"),
-            
+
+    def clearwrite (self, trace = 1):
+        """ A command that clears the marker data and writes new data to the marker.""",
+        self.write(f"TRACE{trace}:MODE WRIT"),
+
+    def maxhold (self, trace = 1):
+        """ A command that sets the trace to max hold mode.""",
+        self.write(f"TRACE{trace}:MODE MAXH"), 
 
     def full_span(self):
         """Sets the span to the full span of the instrument."""
@@ -189,6 +209,7 @@ class AgilentE4407B(Instrument):
         in Hz. This property can be set.
         """,
     )
+    # rbw = resolution_bandwidth()
     video_bandwidth = Instrument.control(
         ":SENS:BAND:VID?;",
         ":SENS:BAND:VID %g;",
@@ -196,6 +217,7 @@ class AgilentE4407B(Instrument):
         in Hz. This property can be set.
         """,
     )
+    # vbw = video_bandwidth()
     resolution_bandwidth_auto = Instrument.control(
         ":SENS:BAND:RES:AUTO?;",
         ":SENS:BAND:RES:AUTO %g;",
@@ -233,7 +255,7 @@ class AgilentE4407B(Instrument):
     )
     detector_type = Instrument.control(
         ":SENS:DET:?;",
-        ":SENS:DET %g;",
+        ":SENS:DET %s;",
         """ A string property that represents the detector type.
         This property can be set.
         """,
@@ -252,7 +274,7 @@ class AgilentE4407B(Instrument):
 
     emi_detector_type = Instrument.control(
         ":SENS:DET:EMI?;",
-        ":SENS:DET:EMI %g;",
+        ":SENS:DET:EMI %s;",
         """ A string property that represents the detector type.
         This property can be set.
         """,
@@ -660,7 +682,7 @@ class AgilentE4407B(Instrument):
     # unit commands
     measure_units = Instrument.control(
         ":UNIT:POW?;",
-        ":UNIT:POW %g;",
+        ":UNIT:POW %s;",
         """ A property that controls the units Y Axis Unit of the Instrument.
         The available units are DBM, DBMV, DBUV, V, W, DVUA, A.""",
         validator=strict_discrete_set,
