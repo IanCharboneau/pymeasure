@@ -109,32 +109,31 @@ class AgilentE4407B(Instrument):
         """ A floating point property that represents the RF level
         in dBm. This property can be set.
         """,
-        validator=strict_range,
-        values=[-42.91, 162],
-
+        # validator=strict_range,
+        # values=[-42.91, 162],
     )
   
 
     def marker_peak (self,trace = 1):
-        """ A command that sets the marker to the peak value.""",
         self.write(f":CALC:MARK{trace}:MAX"),
+    #  A command that sets the marker to the peak value.""",
+        
 
     def clearwrite (self, trace = 1):
-        """ A command that clears the marker data and writes new data to the marker.""",
+        # """ A command that clears the marker data and writes new data to the marker.""",
         self.write(f"TRACE{trace}:MODE WRIT"),
 
     def maxhold (self, trace = 1):
-        """ A command that sets the trace to max hold mode.""",
+        # """ A command that sets the trace to max hold mode.""",
         self.write(f"TRACE{trace}:MODE MAXH"), 
 
     def full_span(self):
-        """Sets the span to the full span of the instrument."""
+        # """Sets the span to the full span of the instrument."""
         self.write(":SENS:FREQ:SPAN:FULL")
 
     def last_span(self):
-        """
-        A command that sets the span to the previous span.
-        """
+        # """A command that sets the span to the previous span."""
+        
         self.write(":SENS:FREQ:SPAN:PREV")
 
     # sweep commands
