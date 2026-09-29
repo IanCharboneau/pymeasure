@@ -61,7 +61,7 @@ class AgilentE4407B(Instrument):
         """ A floating point property that represents the start frequency
         in Hz. This property can be set.
         """,
-        validator=pint_validator,
+        validator=strict_range,
         values=[9000, 26500000000],       
     )
     # start_freq = start_frequency()
@@ -71,7 +71,7 @@ class AgilentE4407B(Instrument):
         """ A floating point property that represents the stop frequency
         in Hz. This property can be set.
         """,
-        validator=pint_validator,
+        validator=strict_range,
         values=[9000, 26500000000],
         # get_process=lambda x: np.float32(re.search("[0-9]+\.[0-9]+", x).group())
         # * np.power(10, int(re.search("\+([0-9]{3}])", x).group())),
@@ -323,6 +323,89 @@ class AgilentE4407B(Instrument):
     )
 
     # Measurement commands
+    def QP_measurement(self, frequency:float, rbw:float, vbw:float, peak = None, points:int = 8001, span:float = 5e3):
+
+        self.center_frequency = frequency
+        self.resolution_bandwidth = rbw
+        self.video_bandwidth = vbw
+        self.frequency_points = points
+        self.span = span
+        self.emi_detector_type = "QPE"
+        self.write(":DET:RANG 0")
+        self.measure_units = "V"
+        sleep (0.2)
+        if peak is None:
+            self.rf_level = 0.01
+            sleep(self.sweep_time*1.5)
+            self.marker_peak(1)
+            new_ref=float(self.ask("calc:mark1:y?"))
+            self.rf_level = new_ref*1.5
+        else:
+            self.rf_level = 10**((peak-119.5)/20)
+        self.clearwrite()
+        self.maxhold()
+        sleep (self.sweep_time * 1.5)
+        self.marker_peak(1)
+        qpf = float(self.ask("calc:mark1:x?"))
+        qpv = 20*np.log10(float(self.ask("calc:mark1:y?")))+120
+        self.emi_detector_type = "OFF"
+        return qpf, qpv
+
+    def AVG_measurement(self, frequency:float, rbw:float, vbw:float, peak = None, points:int = 8001, span:float = 100e3):
+
+        self.center_frequency = frequency
+        self.resolution_bandwidth = rbw
+        self.video_bandwidth = vbw
+        self.frequency_points = points
+        self.span = span
+        self.emi_detector_type = "AVER"
+        self.write(":DET:RANG 0")
+        self.measure_units = "V"
+        sleep (0.2)
+        if peak is None:
+            self.rf_level = 0.01
+            print("sweep time: ", self.sweep_time)
+            sleep(self.sweep_time*1.5)
+            self.marker_peak(1)
+            new_ref=float(self.ask("calc:mark1:y?"))
+            self.rf_level = new_ref*1.5
+        else:
+            self.rf_level = 10**((peak-119.5)/20)
+        self.clearwrite()
+        self.maxhold()
+        print("sweep time: ", self.sweep_time)
+        sleep (self.sweep_time * 1.5)
+        self.marker_peak(1)
+        avgf = float(self.ask("calc:mark1:x?"))
+        avgv = 20*np.log10(float(self.ask("calc:mark1:y?")))+120
+        self.emi_detector_type = "OFF"
+        sleep (0.2)
+        return avgf, avgv
+
+    def PK_measurement(self, start:float, stop:float, rbw:float, vbw:float, points:int = 8001, dwell:float = 3, units = "DBUV"):
+        self.emi_detector_type = "OFF"
+        self.measure_units = units
+        self.start_frequency = start
+        self.stop_frequency = stop
+        self.resolution_bandwidth = rbw
+        self.video_bandwidth = vbw
+        self.frequency_points = points
+        self.detector_type = "POS"
+        sleep(0.5)
+        self.clearwrite()
+        self.maxhold()
+        sleep (dwell + 0.2)
+        self.marker_peak(1)
+
+
+
+
+
+
+
+
+
+
     def measure_off(self):
         """A Command that deactivates the instrument measurement function."""
         self.write(":CONF:SAN")
