@@ -92,7 +92,7 @@ class AgilentE4440A(SCPIMixin, Instrument):
 
     def __init__(self,adapter, name="Agilent E4440A Spectrum Analyzer",
                  read_termination="\n",
-                 write_termination="\n",
+                 write_termination="\r\n",
                  timeout=5000,
                  **kwargs):
         super().__init__(
@@ -323,12 +323,12 @@ class AgilentE4440A(SCPIMixin, Instrument):
     )
     detector_type = Instrument.control(
         ":SENS:DET:?;",
-        ":SENS:DET %g;",
+        ":SENS:DET %s;",
         """ A string property that represents the detector type.
         This property can be set.
         """,
         validator=strict_discrete_set,
-        values=["NEG", "POS", "SAMPL", "AVER", "RMS"],
+        values=["NEG", "POS", "SAMPL", "AVER", "RMS", "EPOS", "EAV", "QPE"],
     )
     average_type = Instrument.control(
         ":SENS:AVER:TYPE?;",
