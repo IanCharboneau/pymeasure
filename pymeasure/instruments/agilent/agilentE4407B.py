@@ -27,12 +27,13 @@ from time import sleep
 from pymeasure.instruments import Instrument
 from pymeasure.instruments.validators import (
     strict_discrete_range,
+    strict_range,
     strict_discrete_set,
     truncated_discrete_set,
     truncated_range,
     pint_validator
 )
-
+from pymeasure.instruments.channel import Channel
 from io import StringIO
 import numpy as np
 import pandas as pd
@@ -40,6 +41,45 @@ import re
 import pint
 from pint import UnitRegistry
 ureg = UnitRegistry()
+
+
+class TraceChannel(Channel):
+    """A channel for adressing traces on the AgilentE4440A."""
+
+
+    trace_mode = Instrument.setting(
+        "Trac{ch}:MODE %s;",
+        """Sets the provided trace number to the specified mode""",
+        validator=strict_discrete_set,
+        values=["WRIT", "MAXH", "MINH", "VIEW", "BLAN"],
+        # values=[0, 1, 2, 3, 4],
+        # set_process=lambda v:["WRIT", "MAXH", "MINH", "VIEW", "BLAN"][v],
+    )   
+
+    
+
+    def clr_write(self):
+        """Sets the provided trace number to clear write mode"""
+        self.trace_mode = "WRIT"
+        
+    def max_hold(self):
+        """Sets the provided trace number to max hold mode"""
+        self.trace_mode = "MAXH"
+    
+    def min_hold(self):
+        """Sets the provided trace number to min hold mode"""
+        self.trace_mode = "MINH"
+    
+    def view(self):
+        """Sets the provided trace number to view mode"""
+        self.trace_mode = "VIEW"
+
+    def blank(self):
+        """Sets the provided trace number to blank mode"""
+        self.trace_mode = "BLAN" 
+
+
+
 
 class AgilentE4407B(Instrument):
     """Represents the AgilentE4407B Spectrum Analyzer
@@ -52,7 +92,9 @@ class AgilentE4407B(Instrument):
         super().__init__(resourceName, "Agilent E4407B Spectrum Analyzer", **kwargs)
         # check if the unit registry is passed in the kwargs
         
-
+    trace1 = Instrument.ChannelCreator(TraceChannel, 1)
+    trace2 = Instrument.ChannelCreator(TraceChannel, 2)
+    trace3 = Instrument.ChannelCreator(TraceChannel, 3)
 
     start_frequency = Instrument.control(
         ":SENS:FREQ:STAR?",
@@ -60,22 +102,22 @@ class AgilentE4407B(Instrument):
         """ A floating point property that represents the start frequency
         in Hz. This property can be set.
         """,
-        validator=pint_validator,
+        validator=strict_range,
         values=[9000, 26500000000],       
     )
-    
+    # start_freq = start_frequency()
     stop_frequency = Instrument.control(
         ":SENS:FREQ:STOP?",
         ":SENS:FREQ:STOP %g",
         """ A floating point property that represents the stop frequency
         in Hz. This property can be set.
         """,
-        validator=pint_validator,
+        validator=strict_range,
         values=[9000, 26500000000],
         # get_process=lambda x: np.float32(re.search("[0-9]+\.[0-9]+", x).group())
         # * np.power(10, int(re.search("\+([0-9]{3}])", x).group())),
     )
-
+    # stop_freq = stop_frequency()
     frequency_step = Instrument.control(
         ":SENS:FREQ:CENT:STEP:INCR?",
         ":SENS:FREQ:CENT:STEP:INCR %g",
@@ -93,7 +135,7 @@ class AgilentE4407B(Instrument):
         values=[9000, 26500000000],
         # cast=int,
     )
-
+    # center_freq = center_frequency()
     span = Instrument.control(
         ":SENS:FREQ:SPAN?;",
         ":SENS:FREQ:SPAN %g;",
@@ -102,19 +144,37 @@ class AgilentE4407B(Instrument):
         """,
     )
 
+    rf_level = Instrument.control(
+        "DISP:WIND:TRAC:Y:SCAL:RLEV?;",
+        "DISP:WIND:TRAC:Y:SCAL:RLEV %g;",
+        """ A floating point property that represents the RF level
+        in dBm. This property can be set.
+        """,
+        # validator=strict_range,
+        # values=[-42.91, 162],
+    )
+  
+
     def marker_peak (self,trace = 1):
-        """ A command that sets the marker to the peak value.""",
         self.write(f":CALC:MARK{trace}:MAX"),
-            
+    #  A command that sets the marker to the peak value.""",
+        
+
+    def clearwrite (self, trace = 1):
+        # """ A command that clears the marker data and writes new data to the marker.""",
+        self.write(f"TRACE{trace}:MODE WRIT"),
+
+    def maxhold (self, trace = 1):
+        # """ A command that sets the trace to max hold mode.""",
+        self.write(f"TRACE{trace}:MODE MAXH"), 
 
     def full_span(self):
-        """Sets the span to the full span of the instrument."""
+        # """Sets the span to the full span of the instrument."""
         self.write(":SENS:FREQ:SPAN:FULL")
 
     def last_span(self):
-        """
-        A command that sets the span to the previous span.
-        """
+        # """A command that sets the span to the previous span."""
+        
         self.write(":SENS:FREQ:SPAN:PREV")
 
     # sweep commands
@@ -189,6 +249,7 @@ class AgilentE4407B(Instrument):
         in Hz. This property can be set.
         """,
     )
+    # rbw = resolution_bandwidth()
     video_bandwidth = Instrument.control(
         ":SENS:BAND:VID?;",
         ":SENS:BAND:VID %g;",
@@ -196,6 +257,7 @@ class AgilentE4407B(Instrument):
         in Hz. This property can be set.
         """,
     )
+    # vbw = video_bandwidth()
     resolution_bandwidth_auto = Instrument.control(
         ":SENS:BAND:RES:AUTO?;",
         ":SENS:BAND:RES:AUTO %g;",
@@ -233,7 +295,7 @@ class AgilentE4407B(Instrument):
     )
     detector_type = Instrument.control(
         ":SENS:DET:?;",
-        ":SENS:DET %g;",
+        ":SENS:DET %s;",
         """ A string property that represents the detector type.
         This property can be set.
         """,
@@ -252,7 +314,7 @@ class AgilentE4407B(Instrument):
 
     emi_detector_type = Instrument.control(
         ":SENS:DET:EMI?;",
-        ":SENS:DET:EMI %g;",
+        ":SENS:DET:EMI %s;",
         """ A string property that represents the detector type.
         This property can be set.
         """,
@@ -302,6 +364,90 @@ class AgilentE4407B(Instrument):
     )
 
     # Measurement commands
+    def QP_measurement(self, frequency:float, rbw:float, vbw:float, peak = None, points:int = 8001, span:float = 5e3):
+
+        self.center_frequency = frequency
+        self.resolution_bandwidth = rbw
+        self.video_bandwidth = vbw
+        self.frequency_points = points
+        self.span = span
+        self.emi_detector_type = "QPE"
+        self.write(":DET:RANG 0")
+        sleep (0.2)
+        # self.measure_units = "V"
+        if peak is None:
+            self.rf_level = 0.01
+            sleep(self.sweep_time*1.5)
+            self.marker_peak(1)
+            new_ref=float(self.ask("calc:mark1:y?"))
+            self.rf_level = new_ref*1.5
+        else:
+            self.rf_level = 10**((peak-119.5)/20)
+        self.clearwrite()
+        self.maxhold()
+        sleep (self.sweep_time * 1.5)
+        self.marker_peak(1)
+        qpf = float(self.ask("calc:mark1:x?"))
+        qpv = 20*np.log10(float(self.ask("calc:mark1:y?")))+120
+        self.emi_detector_type = "OFF"
+        return qpf, qpv
+
+    def AVG_measurement(self, frequency:float, rbw:float, vbw:float, peak = None, points:int = 8001, span:float = 100e3):
+
+        self.center_frequency = frequency
+        self.resolution_bandwidth = rbw
+        self.video_bandwidth = vbw
+        self.frequency_points = points
+        self.span = span
+        self.emi_detector_type = "AVER"
+        self.write(":DET:RANG 0")
+        self.measure_units = "V"
+        sleep (0.2)
+        if peak is None:
+            self.rf_level = 0.01
+            print("sweep time: ", self.sweep_time)
+            sleep(self.sweep_time*1.5)
+            self.marker_peak(1)
+            new_ref=float(self.ask("calc:mark1:y?"))
+            self.rf_level = new_ref*1.5
+        else:
+            self.rf_level = 10**((peak-119.5)/20)
+        self.clearwrite()
+        self.maxhold()
+        print("sweep time: ", self.sweep_time)
+        sleep (self.sweep_time * 1.5)
+        self.marker_peak(1)
+        avgf = float(self.ask("calc:mark1:x?"))
+        avgv = 20*np.log10(float(self.ask("calc:mark1:y?")))+120
+        self.emi_detector_type = "OFF"
+        sleep (0.2)
+        return avgf, avgv
+
+    def PK_measurement(self, start:float, stop:float, rbw:float, vbw:float, points:int = 8001, dwell:float = 3, units = "DBUV", rf_lvl = 106.99):
+        self.emi_detector_type = "OFF"
+        self.measure_units = units
+        self.rf_level = rf_lvl
+        self.start_frequency = start
+        self.stop_frequency = stop
+        self.resolution_bandwidth = rbw
+        self.video_bandwidth = vbw
+        self.frequency_points = points
+        self.detector_type = "POS"
+        sleep(0.5)
+        self.clearwrite()
+        self.maxhold()
+        sleep (dwell + 0.2)
+        self.marker_peak(1)
+
+
+
+
+
+
+
+
+
+
     def measure_off(self):
         """A Command that deactivates the instrument measurement function."""
         self.write(":CONF:SAN")
@@ -660,7 +806,7 @@ class AgilentE4407B(Instrument):
     # unit commands
     measure_units = Instrument.control(
         ":UNIT:POW?;",
-        ":UNIT:POW %g;",
+        ":UNIT:POW %s;",
         """ A property that controls the units Y Axis Unit of the Instrument.
         The available units are DBM, DBMV, DBUV, V, W, DVUA, A.""",
         validator=strict_discrete_set,

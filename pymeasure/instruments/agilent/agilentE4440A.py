@@ -324,6 +324,7 @@ class AgilentE4440A(SCPIMixin, Instrument):
     detector_type = Instrument.control(
         ":SENS:DET:?;",
         ":SENS:DET %s;",
+        ":SENS:DET %s;",
         """ A string property that represents the detector type.
         This property can be set.
         """,
@@ -382,6 +383,59 @@ class AgilentE4440A(SCPIMixin, Instrument):
         in dBm. This property can be set.
         """,
     )
+
+    def QP_measurement(self, frequency:float, rbw:float, vbw:float, peak = None, points:int = 8001, span:float = 200*1e3):
+        self.center_frequency = frequency
+        self.resolution_bandwidth = rbw
+        self.video_bandwidth = vbw
+        self.frequency_points = points
+        self.span = span
+        self.detector_type = "EPOS"
+        
+        self.trace1.clr_write()
+        self.trace1.max_hold()
+        sleep (self.sweep_time * 1.5)
+        self.marker_peak(1)
+        qpf = float(self.ask("calc:mark1:x?"))
+        qpv = float(self.ask("calc:mark1:y?"))
+        # self.emi_detector_type = "OFF"
+        return qpf, qpv
+    
+    def AVG_measurement(self, frequency:float, rbw:float, vbw:float, peak = None, points:int = 8001, span:float = 20*1e6):
+
+        self.center_frequency = frequency
+        self.span = span
+        self.resolution_bandwidth = rbw
+        self.video_bandwidth = vbw
+        self.frequency_points = points
+        self.detector_type = "EPOS"
+        self.trace1.clr_write()
+        self.trace1.max_hold()
+        sleep (self.sweep_time * 1.5)
+        self.marker_peak(1)
+        avgf = float(self.ask("calc:mark1:x?"))
+        avgv = float(self.ask("calc:mark1:y?"))
+        sleep (0.2)
+        return avgf, avgv
+    
+    def PK_measurement(self, start:float, stop:float, rbw:float, vbw:float, points:int = 8001, dwell:float = 3, units = "DBUV", rf_lvl = 106.99):
+        self.emi_detector_type = "OFF"
+        self.measure_units = units
+        self.rf_level = rf_lvl
+        self.start_frequency = start
+        self.stop_frequency = stop
+        self.resolution_bandwidth = rbw
+        self.video_bandwidth = vbw
+        self.frequency_points = points
+        self.detector_type = "POS"
+        sleep(0.5)
+        self.trace1.clr_write()
+        self.trace1.max_hold()
+        sleep (dwell + 0.2)
+        self.marker_peak(1)
+
+
+
 
     # Measurement commands
     def measure_off(self):
@@ -678,7 +732,7 @@ class AgilentE4440A(SCPIMixin, Instrument):
     )
    
     full_screen = Instrument.setting(
-        ":DISP:FSCR %g ;",
+        ":DISP:FSCR %s;",
         """ Turn full screen OFF or ON""",
         validator=strict_discrete_set,
         values=["ON", "OFF", 0, 1],
@@ -698,10 +752,12 @@ class AgilentE4440A(SCPIMixin, Instrument):
         
         pic = "C:\\TEMP.GIF" # path must be less than a certain amount of characters
         self.full_screen = 1
+        # sleep(3)
         self.save_screen = pic
         data = self.recive_file (pic)
         self.delet_file = pic
-        self.full_screen = 0
+        
+        # self.full_screen = 0
         return data
 
     # Format commands

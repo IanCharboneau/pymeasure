@@ -30,14 +30,16 @@ from pymeasure.instruments.validators import (
     strict_discrete_set,
     truncated_discrete_set,
     truncated_range,
-    pint_validator
+    strict_range,
 )
 from pymeasure.instruments.channel import Channel
 
 from io import StringIO
 import numpy as np
+import binascii
 import pandas as pd
 import re
+import png
 import pint
 from pint import UnitRegistry
 ureg = UnitRegistry()
@@ -131,8 +133,8 @@ class RigolDSA815(SCPIMixin, Instrument):
         """ A floating point property that represents the start frequency
         in Hz. This property can be set.
         """,
-        validator=pint_validator,
-        values=[9000, 1600000000],       
+        validator=strict_range,
+        values=[9000, 15*1e9],       
     )
     
     stop_frequency = Instrument.control(
@@ -141,8 +143,8 @@ class RigolDSA815(SCPIMixin, Instrument):
         """ A floating point property that represents the stop frequency
         in Hz. This property can be set.
         """,
-        validator=pint_validator,
-        values=[9000, 1600000000],
+        validator=strict_range,
+        values=[9000, 15*1e9],
         # get_process=lambda x: np.float32(re.search("[0-9]+\.[0-9]+", x).group())
         # * np.power(10, int(re.search("\+([0-9]{3}])", x).group())),
     )
@@ -160,8 +162,8 @@ class RigolDSA815(SCPIMixin, Instrument):
         """ A floating point property that represents the center frequency
         in Hz. This property can be set.
         """,
-        validator=pint_validator,
-        values=[9000, 26500000000],
+        validator=strict_range,
+        values=[9000, 15*1e9],
         # cast=int,
     )
 
@@ -190,8 +192,96 @@ class RigolDSA815(SCPIMixin, Instrument):
         """
         self.write(":SENS:FREQ:SPAN:PREV")
 
+    TG_State = Instrument.control(
+        ":OUTPut:STATe?;",
+        ":OUTPut:STATe %s;",
+        """Tracking generator state. ON or OFF.""",
+        validator=strict_discrete_set,
+        values=["ON", "OFF", 0, 1],
+    )
 
-    
+    TG_Power = Instrument.control(
+
+        ":SOUR:POW:LEV:IMM ?",
+        ":SOUR:POW:LEV:IMM %g",
+        """Tracking generator power level.""",
+        validator=truncated_discrete_set,
+        values=[-20,0],
+    )
+
+    TG_Lvl_Offset = Instrument.control(
+
+        ":SOUR:CORR:OFF ?",
+        ":SOUR:CORR:OFF %g",
+        """Tracking generator level offset.""",
+        validator=truncated_discrete_set,
+        values=[-200,200],
+    )
+
+    TG_Norm_State = Instrument.control(
+        ":CALC:NTD?",
+        ":CALC:NTD %s",
+        """Tracking generator normalization state. ON or OFF.""",
+        validator=strict_discrete_set,
+        values=["ON", "OFF", 0, 1],
+    )
+
+    TG_Norm_Ref_Lvl = Instrument.control(
+        
+        ":DISP:WIN:TRAC:Y:SCAL:NRL ?;",
+        ":DISP:WIN:TRAC:Y:SCAL:NRL %g;",
+        """Tracking generator normalization reference level.""",
+        validator=strict_range,
+        values=[-200,200],
+    )
+
+
+    # Measurement commands
+    def QP_measurement(self, frequency:float, rbw:float, vbw:float, peak = None, points = None, span:float = 20e3):
+
+        self.center_frequency = frequency
+        self.resolution_bandwidth = rbw
+        self.video_bandwidth = vbw
+        self.span = span
+        self.detector_type = "QPE"
+
+        self.trace1.max_hold()
+
+        sleep(self.sweep_time * 1.5)
+        self.marker_peak(1)
+        qpf = float(self.ask("calc:mark1:x?"))
+        qpv = float(self.ask("calc:mark1:y?"))
+
+        return qpf, qpv
+
+    def AVG_measurement(self, frequency:float, rbw:float, vbw:float, peak = None, points:int = 8001, span:float = 500e3):
+
+        self.center_frequency = frequency
+        self.resolution_bandwidth = rbw
+        self.video_bandwidth = vbw
+        self.span = span
+        self.detector_type = "VAV"
+        sleep(0.2)
+        self.trace1.max_hold()
+        sleep (self.sweep_time * 1.5)
+        self.marker_peak(1)
+        avgf = float(self.ask("calc:mark1:x?"))
+        avgv = float(self.ask("calc:mark1:y?"))
+        return avgf, avgv
+
+    def PK_measurement(self, start:float, stop:float, rbw:float, vbw:float, points:int = 8001, dwell:float = 3, units = "DBUV"):
+
+        self.measure_units = units
+        self.detector_filter = "ON"
+        self.start_frequency = start
+        self.stop_frequency = stop
+        self.resolution_bandwidth = rbw
+        self.video_bandwidth = vbw
+        self.detector_type = "POS"
+        sleep(0.2)
+        self.trace1.max_hold()
+        sleep (dwell + 0.2)
+        self.marker_peak(1)
 
     # sweep commands
     frequency_points = Instrument.control(
@@ -338,25 +428,27 @@ class RigolDSA815(SCPIMixin, Instrument):
         This property can be set.
         """,
     )
+
+    detector_filter = Instrument.control(
+        ":BAND:EMIF:STAT?;",
+        ":BAND:EMIF:STAT %s;",
+        """ A boolean property that represents the EMI filter status.
+        This property can be set.
+        """,
+        validator=strict_discrete_set,
+        values=[0, 1, "ON", "OFF"],
+    )
+
     detector_type = Instrument.control(
         ":SENS:DET:?;",
-        ":SENS:DET %g;",
+        ":SENS:DET %s;",
         """ A string property that represents the detector type.
         This property can be set.
         """,
         validator=strict_discrete_set,
-        values=["NEG", "POS", "SAMPL", "AVER", "RMS"],
+        values=["NEG", "POS", "SAMPL", "NORM", "RMS","QPE","VAV"],
     )
 
-    detector_filter = Instrument.control(
-        ":BAND:EMIF:STATE?;",
-        ":BAND:EMIF:STATE %g;",
-        """ A string property that represents the detector filter state.
-        This property can be set.
-        """,
-        validator=strict_discrete_set,
-        values=["ON", "OFF", 0, 1],
-    )
     average_type = Instrument.control(
         ":SENS:AVER:TYPE?;",
         ":SENS:AVER:TYPE %g;",
@@ -367,24 +459,8 @@ class RigolDSA815(SCPIMixin, Instrument):
         values=["LPOW", "POW"],
     )
 
-    emi_detector_type = Instrument.control(
-        ":SENS:DET:EMI?;",
-        ":SENS:DET:EMI %g;",
-        """ A string property that represents the detector type.
-        This property can be set.
-        """,
-        validator=strict_discrete_set,
-        values=["QPE", "AVER", "OFF"],
-    )
-    emi_view_type = Instrument.control(
-        ":SENS:DET:EMI:VIEW?;",
-        ":SENS:DET:EMI:VIEW %g;",
-        """ A string property that represents the detector type.
-        This property can be set.
-        """,
-        validator=strict_discrete_set,
-        values=["POS", "EMI"],
-    )
+
+
     qp_detector_gain = Instrument.control(
         ":SENS:POW:QPG?;",
         ":SENS:POW:QPG %g;",
@@ -757,7 +833,7 @@ class RigolDSA815(SCPIMixin, Instrument):
         """ A property that controls the units Y Axis Unit of the Instrument.
         The available units are DBM, DBMV, DBUV, V, W, DVUA, A.""",
         validator=strict_discrete_set,
-        values=["DBM", "DBMV", "DBUV", "V", "W","DVUA","A"],
+        values=["DBM", "DBMV", "DBUV", "V", "W"]
     )
     # trigger commands
     trigger_source = Instrument.control(
@@ -932,7 +1008,51 @@ class RigolDSA815(SCPIMixin, Instrument):
     #     trace = np.frombuffer(data, dtype=np.float64)
     #     return trace
             
+    def screen(self, filename='rigol.bmp'):
         
+        self.write(":INIT:CONT 0;")
+
+        self.write(':PRIV:snap? BMP;')
+
+        header = self.adapter.connection.read_bytes(11).decode()
+        print(header)
+        size = int(header[2:11]) #skip #9
+        print(size)
+        # size = 100000
+        bytes_read = 0
+
+
+
+        with open(filename, 'wb') as f:
+            while bytes_read < size:
+                chunk = self.adapter.connection.read_bytes(min(1024, size - bytes_read))
+                f.write(chunk)
+                bytes_read += len(chunk)
+
+            f.truncate(size)  # Ensure the file is exactly the size of the data
+        
+        self.write(":INIT:CONT 1;")
+
+    def screenPNG(self, filename='rigol.png'):
+        self.write(":INIT:CONT 0;")
+        sleep(0.5)
+        try:
+            image_data = self.adapter.connection.query_binary_values(
+                ':PRIV:snap? PNG;',
+                datatype='B',
+                container=bytes,
+                chunk_size=2048,
+            )
+            self.adapter.flush_read_buffer()
+            with open(filename, 'wb') as f:
+                f.write(image_data)
+            # return image_data
+        finally:
+            sleep(0.5)
+            self.write(":INIT:CONT 1;")
+            sleep(0.5)
+
+
 
     def trace_df(self, number=1):
         """Returns a pandas DataFrame containing the frequency
