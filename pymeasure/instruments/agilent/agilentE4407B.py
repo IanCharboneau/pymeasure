@@ -33,7 +33,7 @@ from pymeasure.instruments.validators import (
     truncated_range,
     pint_validator
 )
-
+from pymeasure.instruments.channel import Channel
 from io import StringIO
 import numpy as np
 import pandas as pd
@@ -41,6 +41,45 @@ import re
 import pint
 from pint import UnitRegistry
 ureg = UnitRegistry()
+
+
+class TraceChannel(Channel):
+    """A channel for adressing traces on the AgilentE4440A."""
+
+
+    trace_mode = Instrument.setting(
+        "Trac{ch}:MODE %s;",
+        """Sets the provided trace number to the specified mode""",
+        validator=strict_discrete_set,
+        values=["WRIT", "MAXH", "MINH", "VIEW", "BLAN"],
+        # values=[0, 1, 2, 3, 4],
+        # set_process=lambda v:["WRIT", "MAXH", "MINH", "VIEW", "BLAN"][v],
+    )   
+
+    
+
+    def clr_write(self):
+        """Sets the provided trace number to clear write mode"""
+        self.trace_mode = "WRIT"
+        
+    def max_hold(self):
+        """Sets the provided trace number to max hold mode"""
+        self.trace_mode = "MAXH"
+    
+    def min_hold(self):
+        """Sets the provided trace number to min hold mode"""
+        self.trace_mode = "MINH"
+    
+    def view(self):
+        """Sets the provided trace number to view mode"""
+        self.trace_mode = "VIEW"
+
+    def blank(self):
+        """Sets the provided trace number to blank mode"""
+        self.trace_mode = "BLAN" 
+
+
+
 
 class AgilentE4407B(Instrument):
     """Represents the AgilentE4407B Spectrum Analyzer
@@ -53,7 +92,9 @@ class AgilentE4407B(Instrument):
         super().__init__(resourceName, "Agilent E4407B Spectrum Analyzer", **kwargs)
         # check if the unit registry is passed in the kwargs
         
-
+    trace1 = Instrument.ChannelCreator(TraceChannel, 1)
+    trace2 = Instrument.ChannelCreator(TraceChannel, 2)
+    trace3 = Instrument.ChannelCreator(TraceChannel, 3)
 
     start_frequency = Instrument.control(
         ":SENS:FREQ:STAR?",
@@ -332,8 +373,8 @@ class AgilentE4407B(Instrument):
         self.span = span
         self.emi_detector_type = "QPE"
         self.write(":DET:RANG 0")
-        self.measure_units = "V"
         sleep (0.2)
+        # self.measure_units = "V"
         if peak is None:
             self.rf_level = 0.01
             sleep(self.sweep_time*1.5)
@@ -382,9 +423,10 @@ class AgilentE4407B(Instrument):
         sleep (0.2)
         return avgf, avgv
 
-    def PK_measurement(self, start:float, stop:float, rbw:float, vbw:float, points:int = 8001, dwell:float = 3, units = "DBUV"):
+    def PK_measurement(self, start:float, stop:float, rbw:float, vbw:float, points:int = 8001, dwell:float = 3, units = "DBUV", rf_lvl = 106.99):
         self.emi_detector_type = "OFF"
         self.measure_units = units
+        self.rf_level = rf_lvl
         self.start_frequency = start
         self.stop_frequency = stop
         self.resolution_bandwidth = rbw

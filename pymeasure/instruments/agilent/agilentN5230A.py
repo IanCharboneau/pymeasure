@@ -8,7 +8,7 @@ from pymeasure.instruments.validators import (
     strict_discrete_set,
     truncated_discrete_set,
     truncated_range,
-    truncated_discrete_range,
+    # truncated_discrete_range,
     joined_validators,
 
 )
@@ -62,7 +62,7 @@ class TraceChannel(Channel):
         "SENS{ch}:SWE:POIN?",
         "SENS{ch}:SWE:POIN %d",
         """ An integer property that controls the number of points in the sweep of the spectrum analyzer.""",
-        validator=truncated_discrete_range,
+        validator=truncated_discrete_set,
         values=[1, 20001]
     )
 
@@ -99,6 +99,33 @@ class TraceChannel(Channel):
         """ A floating point property that retrieves the trace data in the frequency domain of the spectrum analyzer. Unit Hz.""",
     )
 
+    span = Instrument.control(
+        "SENS{ch}:FREQ:SPAN?",
+        "SENS{ch}:FREQ:SPAN %g",
+        """ A floating point property that controls the frequency span of the spectrum analyzer. Unit Hz.""",
+        validator=truncated_range,
+        values=[0, 20e9]
+    )
+
+    bandwidth = Instrument.control(
+        "SENS{ch}:BAND?",
+        "SENS{ch}:BAND %g",
+        """ A floating point property that controls the frequency bandwidth of the spectrum analyzer. Unit Hz.""",
+        # this needs to be updated to the correct values -GM-
+        validator=truncated_range,
+        values=[0, 20e9]
+    )
+
+    reduce_if_low_freq_bw = Instrument.control(
+        "SENS{ch}:BAND:TRAC?",
+        "SENS{ch}:BAND:TRAC %s",
+        """ A string property that controls whether the bandwidth is reduced at low frequencies.
+        ON - reduce bandwidth at low frequencies
+        OFF - do not reduce bandwidth at low frequencies """,
+        validator=strict_discrete_set,
+        values=["ON", "OFF"]
+    )
+
 
 
 
@@ -117,6 +144,9 @@ class AgilentN5230A(SCPIUnknownMixin, Instrument):
         super().__init__(
             adapter,
             name,
+            read_termination="\n",
+            write_termination="\n",
+            timeout=5000, 
             **kwargs
         )
 
@@ -125,18 +155,14 @@ class AgilentN5230A(SCPIUnknownMixin, Instrument):
     trace3 = Instrument.ChannelCreator(TraceChannel, 3)
     trace4 = Instrument.ChannelCreator(TraceChannel, 4)
 
-    def trace(self, ch):
-        rdata = self.trace(ch).trace
+    def trace(self, trace=1):
+        rdata = self.trace(trace).trace
         rdata = np.fromstring(rdata, sep=',')
         return pd.DataFrame(rdata, columns=["Frequency (Hz)", "Peak (dB)"])
 
-    output_power = Instrument.control(
-        "OUTP:?",
-        "OUTP: %g",
-        """ A floating point property that controls the output power of the spectrum analyzer. Unit dBm.""",
-        validator=strict_discrete_set,
-        values=["ON", "OFF"]
-    )
+    def output_power(self, trace=1, mode="OFF"):
+        self.write(f"SOUR{trace}:POW:COUP {mode} ")
+    
 
     def output_power_lvl(self, trace = 1 , level = -5, port = 1):
         self.write(f"SOUR{trace}:POW{port} {level}")

@@ -383,6 +383,59 @@ class AgilentE4440A(SCPIMixin, Instrument):
         """,
     )
 
+    def QP_measurement(self, frequency:float, rbw:float, vbw:float, peak = None, points:int = 8001, span:float = 200*1e3):
+        self.center_frequency = frequency
+        self.resolution_bandwidth = rbw
+        self.video_bandwidth = vbw
+        self.frequency_points = points
+        self.span = span
+        self.detector_type = "EPOS"
+        
+        self.trace1.clr_write()
+        self.trace1.max_hold()
+        sleep (self.sweep_time * 1.5)
+        self.marker_peak(1)
+        qpf = float(self.ask("calc:mark1:x?"))
+        qpv = float(self.ask("calc:mark1:y?"))
+        # self.emi_detector_type = "OFF"
+        return qpf, qpv
+    
+    def AVG_measurement(self, frequency:float, rbw:float, vbw:float, peak = None, points:int = 8001, span:float = 20*1e6):
+
+        self.center_frequency = frequency
+        self.span = span
+        self.resolution_bandwidth = rbw
+        self.video_bandwidth = vbw
+        self.frequency_points = points
+        self.detector_type = "EPOS"
+        self.trace1.clr_write()
+        self.trace1.max_hold()
+        sleep (self.sweep_time * 1.5)
+        self.marker_peak(1)
+        avgf = float(self.ask("calc:mark1:x?"))
+        avgv = float(self.ask("calc:mark1:y?"))
+        sleep (0.2)
+        return avgf, avgv
+    
+    def PK_measurement(self, start:float, stop:float, rbw:float, vbw:float, points:int = 8001, dwell:float = 3, units = "DBUV", rf_lvl = 106.99):
+        self.emi_detector_type = "OFF"
+        self.measure_units = units
+        self.rf_level = rf_lvl
+        self.start_frequency = start
+        self.stop_frequency = stop
+        self.resolution_bandwidth = rbw
+        self.video_bandwidth = vbw
+        self.frequency_points = points
+        self.detector_type = "POS"
+        sleep(0.5)
+        self.trace1.clr_write()
+        self.trace1.max_hold()
+        sleep (dwell + 0.2)
+        self.marker_peak(1)
+
+
+
+
     # Measurement commands
     def measure_off(self):
         """A Command that deactivates the instrument measurement function."""
