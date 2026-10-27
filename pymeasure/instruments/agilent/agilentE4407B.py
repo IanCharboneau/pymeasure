@@ -364,11 +364,13 @@ class AgilentE4407B(Instrument):
     )
 
     # Measurement commands
-    def QP_measurement(self, frequency:float, rbw:float, vbw:float, peak = None, points:int = 8001, span:float = 5e3):
+    def QP_measurement(self, frequency:float, rbw = None, vbw= None, peak = None, points:int = 8001, span:float = 200e3):
 
         self.center_frequency = frequency
-        self.resolution_bandwidth = rbw
-        self.video_bandwidth = vbw
+        if rbw is not None:
+            self.resolution_bandwidth = rbw
+        if vbw is not None:
+            self.video_bandwidth = vbw
         self.frequency_points = points
         self.span = span
         self.emi_detector_type = "QPE"
@@ -392,11 +394,13 @@ class AgilentE4407B(Instrument):
         self.emi_detector_type = "OFF"
         return qpf, qpv
 
-    def AVG_measurement(self, frequency:float, rbw:float, vbw:float, peak = None, points:int = 8001, span:float = 100e3):
+    def AVG_measurement(self, frequency:float, rbw = None, vbw= None, peak = None, points:int = 8001, span:float = 100e3):
 
         self.center_frequency = frequency
-        self.resolution_bandwidth = rbw
-        self.video_bandwidth = vbw
+        if rbw is not None:
+            self.resolution_bandwidth = rbw
+        if vbw is not None:
+            self.video_bandwidth = vbw
         self.frequency_points = points
         self.span = span
         self.emi_detector_type = "AVER"
