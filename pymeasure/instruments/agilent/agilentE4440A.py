@@ -384,10 +384,12 @@ class AgilentE4440A(SCPIMixin, Instrument):
         """,
     )
 
-    def QP_measurement(self, frequency:float, rbw:float, vbw:float, peak = None, points:int = 8001, span:float = 200*1e3):
+    def QP_measurement(self, frequency:float, rbw = None, vbw= None, peak = None, points:int = 8001, span:float = 200*1e3):
         self.center_frequency = frequency
-        self.resolution_bandwidth = rbw
-        self.video_bandwidth = vbw
+        if rbw is not None:
+            self.resolution_bandwidth = rbw
+        if vbw is not None:
+            self.video_bandwidth = vbw
         self.frequency_points = points
         self.span = span
         self.detector_type = "EPOS"
@@ -401,12 +403,14 @@ class AgilentE4440A(SCPIMixin, Instrument):
         # self.emi_detector_type = "OFF"
         return qpf, qpv
     
-    def AVG_measurement(self, frequency:float, rbw:float, vbw:float, peak = None, points:int = 8001, span:float = 20*1e6):
+    def AVG_measurement(self, frequency:float, rbw = None, vbw= None, peak = None, points:int = 8001, span:float = 20*1e6):
 
         self.center_frequency = frequency
         self.span = span
-        self.resolution_bandwidth = rbw
-        self.video_bandwidth = vbw
+        if rbw is not None:
+            self.resolution_bandwidth = rbw
+        if vbw is not None:
+            self.video_bandwidth = vbw
         self.frequency_points = points
         self.detector_type = "EPOS"
         self.trace1.clr_write()

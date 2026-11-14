@@ -364,11 +364,13 @@ class AgilentE4407B(Instrument):
     )
 
     # Measurement commands
-    def QP_measurement(self, frequency:float, rbw:float, vbw:float, peak = None, points:int = 8001, span:float = 200e3,img= None, data = None):
+    def QP_measurement(self, frequency:float, rbw = None, vbw= None, peak = None, points:int = 8001, span:float = 200e3, img= None, data = None):
 
         self.center_frequency = frequency
-        self.resolution_bandwidth = rbw
-        self.video_bandwidth = vbw
+        if rbw is not None:
+            self.resolution_bandwidth = rbw
+        if vbw is not None:
+            self.video_bandwidth = vbw
         self.frequency_points = points
         self.span = span
         self.emi_detector_type = "QPE"
@@ -391,7 +393,7 @@ class AgilentE4407B(Instrument):
         qpv = 20*np.log10(float(self.ask("calc:mark1:y?")))+120
 
         if img is not None:
-            with open("f{img}_qp.gif", "wb") as f:
+            with open(f"{img}_qp.gif", "wb") as f:
                 f.write(self.get_screen())
 
         if data is not None:
@@ -405,11 +407,14 @@ class AgilentE4407B(Instrument):
         self.emi_detector_type = "OFF"
         return qpf, qpv
 
-    def AVG_measurement(self, frequency:float, rbw:float, vbw:float, peak = None, points:int = 8001, span:float = 100e3, img = None, data = None):
+    
+    def AVG_measurement(self, frequency:float, rbw = None, vbw= None, peak = None, points:int = 8001, span:float = 100e3,img = None, data = None):
 
         self.center_frequency = frequency
-        self.resolution_bandwidth = rbw
-        self.video_bandwidth = vbw
+        if rbw is not None:
+            self.resolution_bandwidth = rbw
+        if vbw is not None:
+            self.video_bandwidth = vbw
         self.frequency_points = points
         self.span = span
         self.emi_detector_type = "AVER"
@@ -433,7 +438,7 @@ class AgilentE4407B(Instrument):
         avgf = float(self.ask("calc:mark1:x?"))
         avgv = 20*np.log10(float(self.ask("calc:mark1:y?")))+120
         if img is not None:
-            with open("f{img}_AVG.gif", "wb") as f:
+            with open(f"{img}_AVG.gif", "wb") as f:
                 f.write(self.get_screen())
 
         if data is not None:
