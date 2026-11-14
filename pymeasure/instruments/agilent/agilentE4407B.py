@@ -382,7 +382,7 @@ class AgilentE4407B(Instrument):
     )
 
     # Measurement commands
-    def QP_measurement(self, frequency:float, rbw = None, vbw= None, peak = None, points:int = 8001, span:float = 200e3):
+    def QP_measurement(self, frequency:float, rbw = None, vbw= None, peak = None, points:int = 8001, span:float = 200e3, img= None, data = None):
 
         self.center_frequency = frequency
         if rbw is not None:
@@ -393,7 +393,7 @@ class AgilentE4407B(Instrument):
         self.span = span
         self.emi_detector_type = "QPE"
         self.write(":DET:RANG 0")
-        sleep (0.2)
+        sleep (1.0)
         # self.measure_units = "V"
         if peak is None:
             self.rf_level = 0.01
@@ -411,14 +411,22 @@ class AgilentE4407B(Instrument):
         qpv = 20*np.log10(float(self.ask("calc:mark1:y?")))+120
 
         if img is not None:
-            with open(img, "wb") as f:
-                photo = self.get_screen()
-                f.write(photo)
+            with open(f"{img}_qp.gif", "wb") as f:
+                f.write(self.get_screen())
+
+        if data is not None:
+            with open(f"{data}_QP.csv","wb") as f:
+                data = self.trace_df()
+                data["Frequency (Hz)"] = data["Frequency (Hz)"]/1e6
+                data.rename(columns={"Frequency (Hz)": "Frequency (MHz)"}, inplace=True)
+                data.to_csv(f, index=False)
+
 
         self.emi_detector_type = "OFF"
         return qpf, qpv
 
-    def AVG_measurement(self, frequency:float, rbw = None, vbw= None, peak = None, points:int = 8001, span:float = 100e3):
+    
+    def AVG_measurement(self, frequency:float, rbw = None, vbw= None, peak = None, points:int = 8001, span:float = 100e3,img = None, data = None):
 
         self.center_frequency = frequency
         if rbw is not None:
@@ -447,12 +455,23 @@ class AgilentE4407B(Instrument):
         self.marker_peak(1)
         avgf = float(self.ask("calc:mark1:x?"))
         avgv = 20*np.log10(float(self.ask("calc:mark1:y?")))+120
+        if img is not None:
+            with open(f"{img}_AVG.gif", "wb") as f:
+                f.write(self.get_screen())
+
+        if data is not None:
+            with open(f"{data}_AVG.csv","wb") as f:
+                data = self.trace_df()
+                data["Frequency (Hz)"] = data["Frequency (Hz)"]/1e6
+                data.rename(columns={"Frequency (Hz)": "Frequency (MHz)"}, inplace=True)
+                data.to_csv(f, index=False)
+        
         self.emi_detector_type = "OFF"
         sleep (0.2)
         return avgf, avgv
 
     def PK_measurement(self, 
-                        rbw:float = None, 
+                       rbw:float = None, 
                        vbw:float = None, 
                        frequency:float = None, 
                        start:float = None, 
