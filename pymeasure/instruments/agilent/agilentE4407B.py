@@ -41,6 +41,12 @@ import re
 import pint
 from pint import UnitRegistry
 ureg = UnitRegistry()
+GHz = ureg.GHz
+MHz = ureg.MHz
+kHz = ureg.kHz
+Hz = ureg.Hz
+sec = ureg.s
+
 
 
 class TraceChannel(Channel):
@@ -102,6 +108,7 @@ class AgilentE4407B(Instrument):
         """ A floating point property that represents the start frequency
         in Hz. This property can be set.
         """,
+        set_process=lambda x: x.to(Hz).magnitude if hasattr(x, "units") else x,
         validator=strict_range,
         values=[9000, 26500000000],       
     )
@@ -112,6 +119,7 @@ class AgilentE4407B(Instrument):
         """ A floating point property that represents the stop frequency
         in Hz. This property can be set.
         """,
+        set_process=lambda x: x.to(Hz).magnitude if hasattr(x, "units") else x,
         validator=strict_range,
         values=[9000, 26500000000],
         # get_process=lambda x: np.float32(re.search("[0-9]+\.[0-9]+", x).group())
@@ -131,6 +139,7 @@ class AgilentE4407B(Instrument):
         """ A floating point property that represents the center frequency
         in Hz. This property can be set.
         """,
+        set_process=lambda x: x.to(Hz).magnitude if hasattr(x, "units") else x,
         validator=pint_validator,
         values=[9000, 26500000000],
         # cast=int,
@@ -142,6 +151,9 @@ class AgilentE4407B(Instrument):
         """ A floating point property that represents the span
         in Hz. This property can be set.
         """,
+        set_process=lambda x: x.to(Hz).magnitude if hasattr(x, "units") else x,
+        validator=pint_validator,
+        values=[0, 26500000000],
     )
 
     rf_level = Instrument.control(
@@ -248,6 +260,9 @@ class AgilentE4407B(Instrument):
         """ A floating point property that represents the resolution bandwidth
         in Hz. This property can be set.
         """,
+        set_process=lambda x: x.to(Hz).magnitude if hasattr(x, "units") else x,
+        validator=strict_discrete_set,
+        values=[10,30,100,200,300,1e3, 3e3, 9e3, 10e3, 30e3,100e3, 120e3, 300e3, 1e6, 3e6, 5e6],
     )
     # rbw = resolution_bandwidth()
     video_bandwidth = Instrument.control(
@@ -256,6 +271,9 @@ class AgilentE4407B(Instrument):
         """ A floating point property that represents the video bandwidth
         in Hz. This property can be set.
         """,
+        set_process=lambda x: x.to(Hz).magnitude if hasattr(x, "units") else x,
+        validator=strict_discrete_set,
+        values=[1,3,10,30,100,300,1e3, 3e3, 10e3, 30e3,100e3, 300e3, 1e6, 3e6, 5e6]
     )
     # vbw = video_bandwidth()
     resolution_bandwidth_auto = Instrument.control(
@@ -391,6 +409,12 @@ class AgilentE4407B(Instrument):
         self.marker_peak(1)
         qpf = float(self.ask("calc:mark1:x?"))
         qpv = 20*np.log10(float(self.ask("calc:mark1:y?")))+120
+
+        if img is not None:
+            with open(img, "wb") as f:
+                photo = self.get_screen()
+                f.write(photo)
+
         self.emi_detector_type = "OFF"
         return qpf, qpv
 
@@ -418,7 +442,7 @@ class AgilentE4407B(Instrument):
             self.rf_level = 10**((peak-119.5)/20)
         self.clearwrite()
         self.maxhold()
-        print("sweep time: ", self.sweep_time)
+        # print("sweep time: ", self.sweep_time)
         sleep (self.sweep_time * 1.5)
         self.marker_peak(1)
         avgf = float(self.ask("calc:mark1:x?"))
@@ -427,12 +451,34 @@ class AgilentE4407B(Instrument):
         sleep (0.2)
         return avgf, avgv
 
-    def PK_measurement(self, start:float, stop:float, rbw:float, vbw:float, points:int = 8001, dwell:float = 3, units = "DBUV", rf_lvl = 106.99):
+    def PK_measurement(self, 
+                        rbw:float = None, 
+                       vbw:float = None, 
+                       frequency:float = None, 
+                       start:float = None, 
+                       stop:float = None, 
+                       span:float = None,
+                       ref_level:float = None,
+                       attenuation:float = None,
+                       points:int = 8001, 
+                       dwell:float = 3, 
+                       units = "DBUV", 
+                       rf_lvl = 106.99):
         self.emi_detector_type = "OFF"
         self.measure_units = units
-        self.rf_level = rf_lvl
-        self.start_frequency = start
-        self.stop_frequency = stop
+        if start is not None and stop is not None:
+            self.start_frequency = start
+            self.stop_frequency = stop
+        elif span is not None and frequency is not None:
+            self.center_frequency = frequency
+            self.span = span
+        else:
+            raise ValueError("Either start and stop frequencies or span and center frequency must be specified.")
+        if ref_level is not None:
+            self.ref_level = ref_level
+        if attenuation is not None:
+            self.attenuation = attenuation
+
         self.resolution_bandwidth = rbw
         self.video_bandwidth = vbw
         self.frequency_points = points

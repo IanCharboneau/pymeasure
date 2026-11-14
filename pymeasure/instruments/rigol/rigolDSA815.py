@@ -39,10 +39,16 @@ import numpy as np
 import binascii
 import pandas as pd
 import re
-import png
+
 import pint
 from pint import UnitRegistry
 ureg = UnitRegistry()
+ureg = UnitRegistry()
+GHz = ureg.GHz
+MHz = ureg.MHz
+kHz = ureg.kHz
+Hz = ureg.Hz
+sec = ureg.s
 
 
 
@@ -135,6 +141,7 @@ class RigolDSA815(SCPIMixin, Instrument):
         """,
         validator=strict_range,
         values=[9000, 15*1e9],       
+        set_process=lambda v: v.to(Hz).magnitude if hasattr(v, "units") else v,
     )
     
     stop_frequency = Instrument.control(
@@ -143,6 +150,7 @@ class RigolDSA815(SCPIMixin, Instrument):
         """ A floating point property that represents the stop frequency
         in Hz. This property can be set.
         """,
+        set_process=lambda v: v.to(Hz).magnitude if hasattr(v, "units") else v,
         validator=strict_range,
         values=[9000, 15*1e9],
         # get_process=lambda x: np.float32(re.search("[0-9]+\.[0-9]+", x).group())
@@ -162,6 +170,7 @@ class RigolDSA815(SCPIMixin, Instrument):
         """ A floating point property that represents the center frequency
         in Hz. This property can be set.
         """,
+        set_process=lambda x: x.to(Hz).magnitude if hasattr(x, "units") else x,
         validator=strict_range,
         values=[9000, 15*1e9],
         # cast=int,
@@ -247,7 +256,8 @@ class RigolDSA815(SCPIMixin, Instrument):
 
         self.trace1.max_hold()
 
-        sleep(self.sweep_time * 1.5)
+        
+        sleep (max(self.sweep_time * 1.5, 3))
         self.marker_peak(1)
         qpf = float(self.ask("calc:mark1:x?"))
         qpv = float(self.ask("calc:mark1:y?"))
@@ -263,25 +273,55 @@ class RigolDSA815(SCPIMixin, Instrument):
         self.detector_type = "VAV"
         sleep(0.2)
         self.trace1.max_hold()
-        sleep (self.sweep_time * 1.5)
+        sleep (max(self.sweep_time * 1.5, 3))
         self.marker_peak(1)
         avgf = float(self.ask("calc:mark1:x?"))
         avgv = float(self.ask("calc:mark1:y?"))
         return avgf, avgv
 
-    def PK_measurement(self, start:float, stop:float, rbw:float, vbw:float, points:int = 8001, dwell:float = 3, units = "DBUV"):
+    def PK_measurement(self, 
+                       frequency:float = None,
+                       start:float = None, 
+                       stop:float = None, 
+                       rbw:float = None, 
+                       vbw:float = None, 
+                       span:float = None, 
+                       ref_level:float = None, 
+                       attenuation:float = None, 
+                       points:int = 8001, 
+                       dwell:float = 3, 
+                       units = "DBUV"):
 
         self.measure_units = units
         self.detector_filter = "ON"
-        self.start_frequency = start
-        self.stop_frequency = stop
+        if start is not None and stop is not None:
+            self.start_frequency = start
+            self.stop_frequency = stop
+        elif span is not None and frequency is not None:
+            self.center_frequency = frequency
+            self.span = span
+        else:
+            raise ValueError("Either start and stop frequencies or span and center frequency must be specified.")
         self.resolution_bandwidth = rbw
         self.video_bandwidth = vbw
         self.detector_type = "POS"
+        self.frequency_points = points
+        if attenuation is not None:
+            self.attenuation = attenuation
+        if ref_level is not None:
+            self.ref_level = ref_level
         sleep(0.2)
+        self.trace1.clr_write()
         self.trace1.max_hold()
-        sleep (dwell + 0.2)
+        if dwell is not None:
+            sleep (dwell + 0.2)
+        else: 
+            sleep (self.sweep_time * 1.5)
         self.marker_peak(1)
+        pkf = float(self.ask("calc:mark1:x?"))
+        sleep(0.2)
+        pkv = float(self.ask("calc:mark1:y?"))
+        return pkf, pkv
 
     # sweep commands
     frequency_points = Instrument.control(

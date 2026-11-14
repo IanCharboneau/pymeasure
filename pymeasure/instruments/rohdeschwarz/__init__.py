@@ -26,3 +26,4 @@ from .fsseries import FSL, FSW
 from .hmp import HMP4040
 from .sfm import SFM
 from .smt06 import SMT06
+from .smj100A import SMJ100A
