@@ -39,7 +39,7 @@ import numpy as np
 import binascii
 import pandas as pd
 import re
-import png
+# import png
 import pint
 from pint import UnitRegistry
 ureg = UnitRegistry()

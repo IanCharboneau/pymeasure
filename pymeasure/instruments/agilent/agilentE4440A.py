@@ -324,7 +324,7 @@ class AgilentE4440A(SCPIMixin, Instrument):
     detector_type = Instrument.control(
         ":SENS:DET:?;",
         ":SENS:DET %s;",
-        ":SENS:DET %s;",
+        
         """ A string property that represents the detector type.
         This property can be set.
         """,
